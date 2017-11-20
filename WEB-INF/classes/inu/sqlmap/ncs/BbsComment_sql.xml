@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="bbsComment">
+
+	<typeAlias  alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+	
+	<resultMap id="bbsDataCommentMap" class="egovMap">
+		<result property="commentIdx" column="COMMENT_IDX"/>
+        <result property="dataIdx" column="DATA_IDX"/>
+        <result property="bbsMstIdx" column="BBS_MST_IDX"/>
+        <result property="comm" column="COMM" />
+        <result property="regNm" column="REG_NM"/>
+        <result property="pwd" column="PWD" />
+        <result property="regDt" column="REG_DT"/>
+        <result property="regId" column="REG_ID"/>
+        <result property="delYn" column="DEL_YN" />
+        <result property="delDt" column="DEL_DT" />
+        
+    </resultMap>
+	
+	<select id="bbsDataCommentDAO.bbsDataCommentListCount" parameterClass="map" resultClass="Integer">
+		<![CDATA[ 
+			SELECT
+				COUNT(*) CNT
+			FROM TB_BBS_COMMENT			
+			WHERE DEL_YN = 'N'
+			  AND BBS_MST_IDX = #bbs_mst_idx#
+			  AND trim(DATA_IDX)    = #data_idx#
+		]]>
+	</select>
+	
+
+	<select id="bbsDataCommentDAO.bbsDataCommentList" parameterClass="map" resultMap="bbsDataCommentMap">
+		<![CDATA[ 
+			SELECT
+				 COMMENT_IDX
+				,TRIM(DATA_IDX) as DATA_IDX
+				,TRIM(BBS_MST_IDX) as BBS_MST_IDX
+				,COMM,REG_NM,PWD,REG_DT,REG_ID,DEL_YN,DEL_DT
+			FROM TB_BBS_COMMENT
+			WHERE DEL_YN = 'N'
+			  AND BBS_MST_IDX = #bbs_mst_idx#
+			  AND trim(DATA_IDX)    = #data_idx#
+			  
+			ORDER BY REG_DT  DESC
+		]]>
+	</select>
+	
+	<select id="bbsDataCommentDAO.bbsDataCommentDetail" parameterClass="map" resultMap="bbsDataCommentMap">
+		<![CDATA[ 
+			SELECT
+				 COMMENT_IDX
+				,TRIM(DATA_IDX) as DATA_IDX
+				,TRIM(BBS_MST_IDX) as BBS_MST_IDX
+				,COMM,REG_NM,PWD,REG_DT,REG_ID,DEL_YN,DEL_DT
+			FROM TB_BBS_COMMENT
+			WHERE  DEL_YN = 'N'
+			  AND TRIM(BBS_MST_IDX) = #bbs_mst_idx#
+			  AND TRIM(DATA_IDX)    = #data_idx#
+			  AND TRIM(COMMENT_IDX) = #comment_idx#
+		]]>
+	</select>
+	
+	
+	<insert id="bbsDataCommentDAO.registBbsDataComment" parameterClass="map">
+		<selectKey keyProperty="comment_idx" type="pre" resultClass="string">
+			SELECT IFNULL(MAX(COMMENT_IDX),0)+1
+ 			  FROM TB_BBS_COMMENT
+		</selectKey>
+		<![CDATA[ 
+			INSERT INTO TB_BBS_COMMENT(
+				  COMMENT_IDX,DATA_IDX,BBS_MST_IDX,COMM
+				 ,REG_NM,PWD
+				 ,REG_DT,REG_ID,DEL_YN
+			)VALUES(
+			      #comment_idx#,#data_idx#,#bbs_mst_idx#,#comm#
+			     ,#reg_nm#,#pwd#
+			     ,NOW(),#reg_id#,'N'
+			)
+		]]>
+	</insert>
+	
+	
+	<update id="bbsDataCommentDAO.modifyBbsDataComment" parameterClass="map">
+		<![CDATA[ 
+			UPDATE TB_BBS_COMMENT SET
+				   COMM = #comm#
+			WHERE  DEL_YN = 'N'
+			  AND TRIM(BBS_MST_IDX) = #bbs_mst_idx#
+			  AND TRIM(DATA_IDX)    = #data_idx#
+			  AND COMMENT_IDX = #comment_idx#
+		]]>
+	</update>
+	
+	
+	<update id="bbsDataCommentDAO.deleteBbsDataComment" parameterClass="map">
+		<![CDATA[ 
+			UPDATE TB_BBS_COMMENT SET
+				    DEL_YN = 'Y' 
+				   ,DEL_DT = NOW() 
+			WHERE TRIM(BBS_MST_IDX) = #bbs_mst_idx#
+			  AND TRIM(DATA_IDX)    = #data_idx#
+			  AND COMMENT_IDX = #comment_idx#
+		]]>
+	</update>
+	 
+	<select id="bbsDataCommentDAO.checkUserByPwd" parameterClass="map" resultClass="Integer">
+		<![CDATA[ 
+			SELECT
+				COUNT(*) CNT
+			FROM TB_BBS_COMMENT			
+			WHERE DEL_YN = 'N'
+			  AND TRIM(BBS_MST_IDX) = #bbs_mst_idx#
+			  AND TRIM(DATA_IDX)    = #data_idx# 
+			  AND PWD         = #pwd#
+		]]>
+	</select>
+	
+	<update id="bbsDataCommentDAO.updateMoveDataComment" parameterClass="map">
+		UPDATE TB_BBS_COMMENT 
+		       SET BBS_MST_IDX = #selBbs#, 
+		       DATA_IDX = #newDataIdx# 
+		 WHERE BBS_MST_IDX = #BBSMSTIDX# 
+		       AND DATA_IDX = #DATAIDX#
+	</update>
+
+</sqlMap>            

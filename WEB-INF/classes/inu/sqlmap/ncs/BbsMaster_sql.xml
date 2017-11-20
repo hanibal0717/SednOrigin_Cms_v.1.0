@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="bbsMaster">
+
+	<typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+	<resultMap id="bbsMstMap" class="egovMap">
+        <result property="bbsMstIdx" column="BBS_MST_IDX"/>
+        <result property="templIdx" column="TEMPL_IDX"/>
+        <result property="themeIdx" column="THEME_IDX"/>
+        <result property="bbsNm" column="BBS_NM"/>
+        <result property="bbsCont" column="BBS_CONT"/>
+        <result property="manageId" column="MANAGE_ID" />
+        <result property="privateUseYn" column="PRIVATE_USE_YN"/>
+        <result property="commentUseYn" column="COMMENT_USE_YN"/>
+        <result property="attachUseYn" column="ATTACH_USE_YN" />
+        <result property="attachCnt" column="ATTACH_CNT" />        
+        <result property="pagingUseYn" column="PAGING_USE_YN" />
+        <result property="pageUnit" column="PAGE_UNIT"  />
+        <result property="pageSize" column="PAGE_SIZE"  />
+        <result property="authBtnYn" column="AUTH_BTN_YN"  />
+        <result property="hotImgYn" column="HOT_IMG_YN"  />
+        <result property="hotImgCnt" column="HOT_IMG_CNT"  />
+        <result property="newImgYn" column="NEW_IMG_YN"  />
+        <result property="newImgDt" column="NEW_IMG_DT"  />
+        <result property="regDt" column="REG_DT"  />
+        <result property="regId" column="REG_ID"  />
+        <result property="regIp" column="REG_IP"  />
+        <result property="modDt" column="MOD_DT"  />
+        <result property="modId" column="MOD_ID"  />
+        <result property="modIp" column="MOD_IP"  />
+        <result property="delYn" column="DEL_YN"  />        
+        <result property="roleId" column="ROLE_ID"  />
+        <result property="noticeYn" column="NOTICE_YN"  />
+        <result property="fixedDataYn" column="FIXED_DATA_YN"  />        
+        <result property="introTop" column="INTRO_TOP"  />
+        <result property="introFooter" column="INTRO_FOOTER" />
+         
+        <result property="dataCount" column="DATA_COUNT"  /> 
+        <result property="commentCount" column="COMMENT_COUNT"  /> 
+        <result property="userWriteYn" column="USER_WRITE_YN"  />
+        
+        <result property="maxDt" column="MAX_DT"  />
+        
+        <result property="conAuthType" column="CON_AUTH_TYPE"  />
+        <result property="conAuthList" column="CON_AUTH_LIST"  />
+        <result property="conAuthView" column="CON_AUTH_VIEW"  />
+        <result property="conAuthWrite" column="CON_AUTH_WRITE"  />
+        <result property="cateUseYn" column="CATE_USE_YN"  />
+        
+    </resultMap>
+    
+	
+	
+	<select id="bbsMaster.bbsMstCnt" parameterClass="map" resultClass="Integer">
+		<![CDATA[  
+			 	SELECT COUNT(*) CNT		 
+				FROM TB_BBS_MST A        
+				WHERE A.DEL_YN = 'N'
+		]]>
+				<isNotEmpty property="SC_KEYWORD">
+					<isEqual property="SC_KEY" compareValue="BBS_NM">
+						AND A.BBS_NM LIKE '%' || #SC_KEYWORD# || '%'
+					</isEqual>
+					<isEqual property="SC_KEY" compareValue="BBS_CONT">
+						AND A.BBS_CONT LIKE '%' || #SC_KEYWORD# || '%'
+					</isEqual>
+					<isEmpty property="SC_KEY">
+						AND (A.BBS_NM LIKE '%' || #SC_KEYWORD# || '%' OR A.BBS_CONT  LIKE '%' || #SC_KEYWORD# || '%' )
+					</isEmpty>
+				</isNotEmpty>
+				
+	</select>
+	
+
+	<select id="bbsMaster.bbsMstList" parameterClass="map" resultMap="bbsMstMap">
+		<![CDATA[ 
+				SELECT
+					 A.BBS_MST_IDX ,   A.TEMPL_IDX ,      A.THEME_IDX ,      A.BBS_NM ,        A.BBS_CONT
+					,A.MANAGE_ID ,     A.PRIVATE_USE_YN , A.COMMENT_USE_YN , A.ATTACH_USE_YN , A.ATTACH_CNT
+					,A.PAGING_USE_YN , A.PAGE_UNIT ,      A.PAGE_SIZE ,      A.AUTH_BTN_YN ,   A.HOT_IMG_YN
+					,A.HOT_IMG_CNT ,   A.NEW_IMG_YN ,     A.NEW_IMG_DT ,     A.REG_DT ,        A.REG_ID
+					,A.REG_IP ,        A.MOD_DT ,         A.MOD_ID ,         A.MOD_IP ,        A.DEL_YN
+					,A.ROLE_ID ,       A.NOTICE_YN ,      A.FIXED_DATA_YN
+					,A.INTRO_TOP,      A.INTRO_FOOTER,    A.USER_WRITE_YN
+											
+					,(SELECT COUNT(*) FROM TB_BBS_DATA D    
+					   WHERE A.BBS_MST_IDX = D.BBS_MST_IDX 
+					     AND D.DEL_YN='N' ) DATA_COUNT
+					,(SELECT COUNT(*) FROM TB_BBS_COMMENT D , TB_BBS_DATA C 
+					   WHERE D.DATA_IDX=C.DATA_IDX  AND C.DEL_YN='N'
+	           		     AND D.BBS_MST_IDX=C.BBS_MST_IDX 
+	           		     AND A.BBS_MST_IDX = D.BBS_MST_IDX
+	           		     AND D.DEL_YN='N' ) COMMENT_COUNT 
+	           	  , D.MAX_DT
+		            , A.CON_AUTH_TYPE
+					, A.CON_AUTH_LIST
+					, A.CON_AUTH_VIEW
+					, A.CON_AUTH_WRITE
+					, A.CATE_USE_YN
+				FROM TB_BBS_MST A
+					LEFT OUTER JOIN 
+				       (SELECT MAX(REG_DT) AS MAX_DT, 
+				              BBS_MST_IDX 
+				         FROM TB_BBS_DATA 
+				        GROUP BY BBS_MST_IDX
+				       ) D 
+				       ON D.BBS_MST_IDX = A.BBS_MST_IDX
+				WHERE A.DEL_YN = 'N'	
+				
+		]]>	 
+				<isNotEmpty property="SC_KEYWORD">
+					<isEqual property="SC_KEYWORD" compareValue="BBS_NM">
+						AND A.BBS_NM LIKE "%$search_keyword$%"
+					</isEqual>
+					<isEqual property="SC_KEYWORD" compareValue="BBS_CONT">
+						AND A.BBS_CONT LIKE "%$search_keyword$%"
+					</isEqual>
+					<isEqual property="SC_KEYWORD" compareValue="BBS_ALL">
+						AND (A.BBS_NM LIKE "%$search_keyword$%" OR A.BBS_CONT  LIKE "%$search_keyword$%" )
+					</isEqual>
+				</isNotEmpty>
+		<![CDATA[ 		
+			ORDER BY A.REG_DT DESC	 
+		]]>		
+	</select>
+	
+	<select id="bbsMaster.bbsMstDetail" parameterClass="map" resultMap="bbsMstMap">
+		<![CDATA[ 
+			SELECT
+				 A.BBS_MST_IDX ,     A.TEMPL_IDX ,      A.THEME_IDX ,       A.BBS_NM ,        A.BBS_CONT
+				,A.MANAGE_ID ,       A.PRIVATE_USE_YN , A.COMMENT_USE_YN ,  A.ATTACH_USE_YN , A.ATTACH_CNT
+				,A.PAGING_USE_YN ,   A.PAGE_UNIT ,      A.PAGE_SIZE ,       A.AUTH_BTN_YN ,   A.HOT_IMG_YN
+				,A.HOT_IMG_CNT ,     A.NEW_IMG_YN ,     A.NEW_IMG_DT ,      A.REG_DT ,        A.REG_ID
+				,A.REG_IP ,          A.MOD_DT ,         A.MOD_ID ,          A.MOD_IP ,        A.DEL_YN
+				,A.ROLE_ID ,         A.NOTICE_YN ,      A.FIXED_DATA_YN
+				,A.INTRO_TOP,        A.INTRO_FOOTER,    A.USER_WRITE_YN
+																
+				,(SELECT COUNT(*) FROM TB_BBS_DATA D    
+				   WHERE A.BBS_MST_IDX = D.BBS_MST_IDX AND D.DEL_YN='N' ) DATA_COUNT
+				,(SELECT COUNT(*) FROM TB_BBS_COMMENT D , TB_BBS_DATA C 
+				   WHERE D.DATA_IDX=C.DATA_IDX  AND C.DEL_YN='N'
+           			 AND D.BBS_MST_IDX=C.BBS_MST_IDX AND A.BBS_MST_IDX = D.BBS_MST_IDX 
+           			 AND D.DEL_YN='N' ) COMMENT_COUNT
+           		  
+           		  , '' AS MAX_DT
+		          
+			      , A.CON_AUTH_TYPE
+				  , A.CON_AUTH_LIST
+				  , A.CON_AUTH_VIEW
+				  , A.CON_AUTH_WRITE	
+				  , A.CATE_USE_YN		
+			  FROM TB_BBS_MST A
+			WHERE A.DEL_YN = 'N'	
+			AND A.BBS_MST_IDX   = #bbs_mst_idx#
+		]]>		
+	</select>
+	
+	
+	<insert id="bbsMaster.registBbsMst" parameterClass="map">
+		<selectKey keyProperty="idx" type="pre" resultClass="string">
+			SELECT concat('BM', LPAD( ifnull(MAX(SUBSTR(BBS_MST_IDX , 3)) , 0) + 1 , 10 , '0' ))   IDX 
+			  FROM TB_BBS_MST
+			 WHERE BBS_MST_IDX LIKE 'BM%'
+		</selectKey>
+		<![CDATA[ 
+			INSERT INTO TB_BBS_MST(
+				 BBS_MST_IDX ,   TEMPL_IDX ,	THEME_IDX ,		BBS_NM ,		BBS_CONT
+				,MANAGE_ID ,     PRIVATE_USE_YN,COMMENT_USE_YN ,ATTACH_USE_YN , ATTACH_CNT
+				,PAGING_USE_YN , PAGE_UNIT ,	PAGE_SIZE ,		AUTH_BTN_YN ,	HOT_IMG_YN
+				,HOT_IMG_CNT ,   NEW_IMG_YN ,	NEW_IMG_DT ,	REG_DT ,		REG_ID
+				,REG_IP ,        MOD_DT ,		MOD_ID ,		MOD_IP ,		DEL_YN
+				,ROLE_ID ,	     NOTICE_YN ,	FIXED_DATA_YN
+				,INTRO_TOP, 	 INTRO_FOOTER, 	USER_WRITE_YN
+				, CON_AUTH_TYPE
+				, CON_AUTH_LIST
+				, CON_AUTH_VIEW
+				, CON_AUTH_WRITE	
+				, CATE_USE_YN
+			)VALUES(
+				 #idx# ,          #templ_idx# ,    #theme_idx# ,      #bbs_nm# ,         #bbs_cont#
+				,#manage_id# ,    #private_use_yn#,#comment_use_yn# , #attach_use_yn# ,  #attach_cnt#
+				,#paging_use_yn# ,#page_unit# ,    #page_size# ,      #auth_btn_yn# ,    #hot_img_yn#
+				,#hot_img_cnt# ,  #new_img_yn# ,   #new_img_dt# ,     NOW() ,          #reg_id#
+				,#reg_ip# ,       NOW() ,        #reg_id# ,     #reg_ip# ,'N'
+				,#role_id# ,      #notice_yn# ,    #fixed_data_yn#
+				,#intro_top#,     #intro_footer#,  #user_write_yn#
+				, #con_auth_type#
+				, #con_auth_list#
+				, #con_auth_view#
+				, #con_auth_write#	
+				, #cate_use_yn#
+			)
+		]]>
+	</insert>
+	
+	
+	<update id="bbsMaster.modifyBbsMst" parameterClass="map">
+		<![CDATA[ 
+			UPDATE TB_BBS_MST SET
+		 		 BBS_NM         = #bbs_nm# 
+				,BBS_CONT       = #bbs_cont#
+				,MANAGE_ID      = #manage_id#
+				,PRIVATE_USE_YN = #private_use_yn#
+				,COMMENT_USE_YN = #comment_use_yn#
+				,ATTACH_USE_YN  = #attach_use_yn#
+				,ATTACH_CNT     = #attach_cnt#
+				,PAGING_USE_YN  = #paging_use_yn#
+				,PAGE_UNIT      = #page_unit#
+				,PAGE_SIZE      = #page_size#
+				,INTRO_TOP      = #intro_top#
+				,INTRO_FOOTER   = #intro_footer#
+				,USER_WRITE_YN  = #user_write_yn#
+				
+				,AUTH_BTN_YN    = #auth_btn_yn#
+				,HOT_IMG_YN     = #hot_img_yn#
+				,HOT_IMG_CNT    = #hot_img_cnt#
+				,NEW_IMG_YN     = #new_img_yn#				
+				,NEW_IMG_DT     = #new_img_dt#
+				,NOTICE_YN      = #notice_yn#
+				,FIXED_DATA_YN  = #fixed_data_yn# 
+				
+				,MOD_DT         = NOW()
+				,MOD_ID         = #mod_id#
+				,MOD_IP         = #mod_ip#
+				,templ_idx      = #templ_idx#
+				
+				,CON_AUTH_TYPE  = #con_auth_type# 
+				,CON_AUTH_LIST  = #con_auth_list# 
+				,CON_AUTH_VIEW  = #con_auth_view# 
+				,CON_AUTH_WRITE = #con_auth_write#
+				,CATE_USE_YN    = #cate_use_yn#
+								
+			WHERE BBS_MST_IDX   = #bbs_mst_idx#
+		]]>
+	</update>
+	
+	
+	<update id="bbsMaster.deleteBbsMst" parameterClass="map">
+		<![CDATA[ 
+			UPDATE TB_BBS_MST SET
+				 DEL_YN = 'Y'
+				,MOD_DT       = NOW()
+				,MOD_ID       = #mod_id#
+				,MOD_IP       = #mod_ip#
+			WHERE BBS_MST_IDX = #bbs_mst_idx#
+		]]>
+	</update>
+	
+	  
+</sqlMap>

@@ -1,0 +1,965 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="system">
+
+	<typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+<select id="system.selectSystemCode" parameterClass="java.util.HashMap" resultClass="egovMap">
+<!-- 
+SELECT  
+	c.CM_CD, c.CM_NM
+FROM HS_CM_CD c
+WHERE c.GRP_CD = 999
+ORDER BY c.CD_SEQ
+ -->
+ SELECT m.MENU_SEQ CM_CD, m.MENU_NAME CM_NM
+FROM SYS_MENU m
+WHERE up_menu_seq = 1
+order by m.MENU_SEQ 
+</select>
+
+<insert id="system.mergeSYSTEM_MENU" parameterClass="java.util.HashMap">
+        <selectKey resultClass="int" keyProperty="keyNo">
+			SELECT ifnull(max(menu_seq),1)+1 AS ID FROM SYS_MENU
+		</selectKey>
+
+<!-- MERGE INTO SYS_MENU
+USING DUAL
+ON ( MENU_SEQ = #keyNo# ) 
+WHEN MATCHED THEN
+UPDATE SET
+ MENU_NAME = #menuName#
+,MENU_PATH = #menuPath#
+,MENU_TXT = #menuTxt#
+,USE_YN = #useYn#
+WHEN NOT MATCHED THEN
+INSERT (
+MENU_SEQ,UP_MENU_SEQ,MENU_LEVEL
+,SYS_CODE,MENU_NAME,MENU_PATH,MENU_TXT, USE_YN
+)	values (
+#keyNo#,#pno#,#menuLevel#
+,#sysCode# ,#menuName# ,#menuPath#, #menuTxt#, #useYn#
+
+) -->
+<!--
+INSERT INTO SYS_MENU 
+       (MENU_SEQ, UP_MENU_SEQ, MENU_LEVEL, SYS_CODE, MENU_NAME, MENU_PATH, MENU_TXT, USE_YN) 
+VALUES (#keyNo#, #pno#, #menuLevel#, #sysCode#, #menuName#, #menuPath#, #menuTxt#, #useYn#)
+ON DUPLICATE KEY 
+		UPDATE
+  		MENU_NAME = #menuName#
+       ,MENU_PATH = #menuPath#
+       ,MENU_TXT = #menuTxt#
+       ,USE_YN = #useYn#
+-->
+</insert>
+
+<insert id="system.insertSYSTEM_MENU" parameterClass="java.util.HashMap">
+        <selectKey resultClass="int" keyProperty="keyNo">
+			SELECT ifnull(max(menu_seq),1)+1 AS ID FROM SYS_MENU
+		</selectKey>
+		INSERT INTO SYS_MENU 
+               (MENU_SEQ, UP_MENU_SEQ, MENU_LEVEL, SYS_CODE, MENU_NAME, MENU_PATH, MENU_TXT, CONTENTS_YN, USE_YN) 
+        VALUES (#keyNo#, #pno#, #menuLevel#, #sysCode#, #menuName#, #menuPath#, #menuTxt#, 'N', #useYn#)
+</insert>
+
+<update id="system.updateSYSTEM_MENU" parameterClass="java.util.HashMap">
+	UPDATE SYS_MENU SET
+  		MENU_NAME = #menuName#
+       ,MENU_PATH = #menuPath#
+       ,MENU_TXT = #menuTxt#
+       ,USE_YN = #useYn#
+	WHERE MENU_SEQ = #no# AND UP_MENU_SEQ = #pno#
+</update>
+
+<insert id="system.mergeUSER_MENU" parameterClass="java.util.HashMap">
+        <selectKey resultClass="int" keyProperty="keyNo">
+			SELECT ifnull(max(menu_seq),1)+1 AS ID FROM TB_USER_MENU
+		</selectKey>
+		INSERT INTO  TB_USER_MENU (
+		 	 MENU_SEQ,UP_MENU_SEQ,MENU_LEVEL
+			,SYS_CODE,MENU_NAME,MENU_PATH,MENU_TXT
+		)	values (
+			#keyNo#,#pno#,#menuLevel#
+			,#sysCode# ,#menuName# ,#menuPath#, #menuTxt#
+		) 
+</insert> 
+
+
+<update id="system.updateUSER_MENU" parameterClass="java.util.HashMap">      
+	UPDATE TB_USER_MENU SET
+			 MENU_NAME = #menuName#
+			,MENU_PATH = #menuPath#
+			,MENU_TXT = #menuTxt#
+	WHERE MENU_SEQ = #no#
+</update> 
+
+<select id="system.selectSYS_MENU" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT 
+MENU_SEQ no,UP_MENU_SEQ pno,T_MENU_LEVEL MENU_LEVEL,SYS_CODE, MENU_NAME menu_Name ,MENU_PATH,MENU_TXT, USE_YN,
+(SELECT COUNT(*) FROM SYS_MENU C WHERE C.UP_MENU_SEQ = hi.MENU_SEQ) AS CHILD_CNT
+FROM    (
+        SELECT  hierarchy_connect_by_parent_eq_prior_id(MENU_SEQ) AS id, @level AS T_MENU_LEVEL
+        FROM    (
+                SELECT  @start_with := 1,
+                             @id := @start_with,
+                             @level := 0
+                ) vars, SYS_MENU
+        WHERE   @id IS NOT NULL
+        ) ho
+JOIN    SYS_MENU hi
+ON      hi.MENU_SEQ = ho.id
+WHERE sys_code = #sysCode#
+</select>
+
+<delete id="system.deleteSYS_MENU" parameterClass="java.util.HashMap">
+DELETE FROM SYS_MENU WHERE MENU_SEQ = #no#
+<!-- DELETE sys_menu m 
+WHERE m.menu_seq= #no# 
+OR m.menu_seq in ( 
+	SELECT hi.menu_seq
+	FROM    (
+	        SELECT  hierarchy_connect_by_parent_eq_prior_id(MENU_SEQ) AS id, @level AS level
+	        FROM    (
+	                SELECT  @start_with := #no#,
+	                        @id := @start_with,
+	                        @level := 0
+	                ) vars, SYS_MENU
+	        WHERE   @id IS NOT NULL
+	        ) ho
+	JOIN    SYS_MENU hi
+	ON      hi.MENU_SEQ = ho.id	 
+	) -->
+</delete>
+
+<delete id="system.deleteUSER_MENU" parameterClass="java.util.HashMap">
+	DELETE FROM TB_USER_MENU WHERE MENU_SEQ = #no#
+<!-- DELETE TB_USER_MENU m 
+WHERE m.menu_seq= #no# 
+OR m.menu_seq in ( 
+	SELECT hi.menu_seq
+	FROM    (
+	        SELECT  hierarchy_connect_by_parent_eq_prior_id_user(MENU_SEQ) AS id, @level AS level
+	        FROM    (
+	                SELECT  @start_with := #no#,
+	                        @id := @start_with,
+	                        @level := 0
+	                ) vars, TB_USER_MENU
+	        WHERE   @id IS NOT NULL
+	        ) ho
+	JOIN    TB_USER_MENU hi
+	ON      hi.MENU_SEQ = ho.id	 
+	) -->
+</delete>
+
+<select id="system.selectSYS_GROUP" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT 
+GROUP_SEQ,GROUP_NM
+FROM SYS_GROUP g
+<isNotEmpty property="groupNm">
+where GROUP_NM = #groupNm#
+</isNotEmpty>
+ORDER BY g.GROUP_SEQ
+</select>
+
+
+<update id="system.mergeSYS_GROUP" parameterClass="java.util.HashMap">
+	UPDATE SYS_GROUP SET
+		group_nm = #groupNm#
+	WHERE group_seq = #groupSeq#
+<!--  	<selectKey resultClass="int" keyProperty="keyNo">
+		SELECT ifnull(max(group_seq),1)+1 AS ID FROM SYS_GROUP
+	</selectKey>
+MERGE INTO SYS_GROUP
+USING DUAL
+ON ( group_seq = #groupSeq# ) 
+WHEN MATCHED THEN
+UPDATE SET
+ group_nm = #groupNm#
+WHEN NOT MATCHED THEN
+INSERT (
+group_seq,group_nm
+)	values (
+#keyNo#,#groupNm#
+)
+ -->
+</update>
+
+<insert id="system.insertSYS_GROUP" parameterClass="java.util.HashMap">
+	<selectKey resultClass="int" keyProperty="keyNo">
+		SELECT ifnull(max(group_seq),1)+1 AS ID FROM SYS_GROUP
+	</selectKey>
+	INSERT INTO SYS_GROUP (
+		group_seq,group_nm
+	) VALUES (
+		#keyNo#,#groupNm#
+	)
+</insert>
+
+<delete id="system.deleteSYS_GROUP" parameterClass="java.util.HashMap">
+DELETE FROM SYS_GROUP  
+WHERE group_seq = #groupSeq# 
+AND GROUP_ENG IS NULL
+</delete>
+
+<insert id="system.insertSYS_GROUPMENU" parameterClass="java.util.HashMap">
+
+INSERT INTO SYS_GROUPMENU (
+group_seq,menu_seq
+)	values (
+#groupSeq#,#no#
+)
+</insert>
+<delete id="system.deleteSYS_GROUPMENU" parameterClass="java.util.HashMap">
+DELETE FROM SYS_GROUPMENU  
+WHERE group_seq= #groupSeq# 
+and menu_seq = #no#
+</delete>
+
+<select id="system.selectSYS_GROUPMENU" parameterClass="java.util.HashMap" resultClass="egovMap">
+
+SELECT 
+	 g.GROUP_SEQ, s.MENU_SEQ no,UP_MENU_SEQ pno,T_MENU_LEVEL MENU_LEVEL,SYS_CODE,MENU_NAME,MENU_PATH,MENU_TXT
+FROM (
+        SELECT  hierarchy_connect_by_parent_eq_prior_id_sysgroupmenu(MENU_SEQ) AS id, @level AS T_MENU_LEVEL
+        FROM    (
+                SELECT  @start_with := 1,
+                        @id := @start_with,
+                        @level := 0
+                ) vars, SYS_MENU
+        WHERE   @id IS NOT NULL
+        ) ho
+JOIN    SYS_MENU s ON s.MENU_SEQ = ho.id
+left outer join SYS_GROUPMENU g ON (s.MENU_SEQ = g.menu_seq AND g.GROUP_SEQ = #groupSeq#)
+WHERE sys_code = #sysCode# 
+ 
+</select>
+
+<select id="system.selectMapHsIsInsa" parameterClass="java.util.HashMap" resultClass="egovMap">
+
+SELECT m.sabun id, m.USER_NM, BUSEO_CD 
+,(SELECT concat('ROLE_',gr.GROUP_ENG) FROM SYS_GROUP gr WHERE gr.GROUP_SEQ = 2) role_Nm
+FROM (
+  SELECT i.*
+  FROM HJ_IS_INSA i
+  WHERE i.SABUN = #id#
+<isNotEqual property="ncsSession" compareValue="Y"> 
+    AND i.PASSWD = fx_pass_enc(#pwd#)
+</isNotEqual>
+<![CDATA[
+  ) m
+WHERE EXISTS (
+  SELECT 1
+  FROM HJ_PK_EVALDAESANG p
+  WHERE (SABUN = m.SABUN OR EVAL1_SABUN = m.SABUN OR EVAL2_SABUN = m.SABUN OR EVAL3_SABUN = m.SABUN OR EVAL4_SABUN = m.SABUN)
+  AND yyyy = CONCAT(DATE_FORMAT(NOW(), '%Y') )
+)
+]]>
+</select>
+<select id="system.selectMapHsIsInsaAdmin" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT concat('ROLE_',gr.GROUP_ENG) role_Nm 
+,gr.group_nm user_Nm, p.id
+FROM SYS_GROUP gr, 
+  (SELECT 
+	  id, '1' group_seq
+  FROM HJ_PK_MANAGER_ID
+  WHERE id = #id#
+  <isNotEqual property="ncsSession" compareValue="Y">
+  AND passwd = fx_pass_enc(#pwd#)
+  </isNotEqual>
+  ) p 
+WHERE gr.GROUP_SEQ = p.GROUP_SEQ
+</select>
+
+<select id="system.selectAuthList" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT 
+CONVERT(CONCAT('ROLE_',IFNULL((g.group_eng), CONCAT('GROUP',g.GROUP_SEQ))), CHAR) authority
+ FROM SYS_GROUP g
+ WHERE 1 = 1
+and g.GROUP_SEQ IN (SELECT m.GROUP_SEQ FROM SYS_GROUP_MEMBER m WHERE m.MEMBER_ID = #id#)
+ <isNotEmpty property="GROUP_SEQ">
+ or g.GROUP_SEQ = #GROUP_SEQ#
+ </isNotEmpty>
+ <!-- ORDER BY DECODE(g.GROUP_SEQ, 10, 0, g.GROUP_SEQ) -->
+</select>
+
+
+<select id="system.selectHJ_IS_INSA" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT 
+i.MANAGE_ID member_Id, i.MANAGE_NM, '' BUSEO_NM
+, (sm.GROUP_SEQ)  GROUP_SEQ
+, case when sm.GROUP_SEQ=null then 0 else 1 end as no 
+, '' NO_F
+FROM TB_MANAGE i 
+left outer JOIN SYS_GROUP_MEMBER sm
+ON (i.MANAGE_ID = sm.MEMBER_ID AND sm.GROUP_SEQ = #groupSeq# ) 
+<isNotEmpty property="searchTxt">
+	where (i.MANAGE_ID = #searchTxt# or i.MANAGE_NM like '%'||#searchTxt#||'%')
+</isNotEmpty>
+<isEmpty property="searchTxt">
+WHERE 1=1
+</isEmpty>
+ORDER BY i.MANAGE_ID
+</select>
+
+
+<insert id="system.insertSYS_GROUP_MEMBER" parameterClass="java.util.HashMap">
+
+INSERT INTO SYS_GROUP_MEMBER (
+group_seq,MEMBER_ID
+)	values (
+#groupSeq#,#memberId#
+)
+</insert>
+<delete id="system.deleteSYS_GROUP_MEMBER" parameterClass="java.util.HashMap">
+DELETE SYS_GROUP_MEMBER  
+WHERE group_seq= #groupSeq# 
+and MEMBER_ID = #memberId#
+</delete>
+
+<select id="system.selectGroupMemberY" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT 
+GROUP_SEQ,GROUP_NM
+FROM SYS_GROUP g
+where 1 = 1
+and member_yn IS NULL 
+<isNotEmpty property="groupNm">
+and GROUP_NM = #groupNm#
+</isNotEmpty>
+ORDER BY g.GROUP_SEQ
+</select>
+<select id="system.selectMemberInGroup" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT 
+i.MANAGE_ID member_Id, i.DEPARTMENT, i.MANAGE_NM USER_NM
+, (sm.GROUP_SEQ)  GROUP_SEQ, CASE WHEN sm.GROUP_SEQ=NULL THEN 0 ELSE 1 END AS  NO
+FROM TB_MANAGE i,SYS_GROUP_MEMBER sm
+WHERE TRIM(i.MANAGE_ID) = sm.MEMBER_ID
+and sm.group_seq = #groupSeq#
+	<isNotEmpty property="searchTxt">
+		and (i.MANAGE_ID = #searchTxt# or i.MANAGE_NM like CONCAT('%', #searchTxt#, '%'))
+	</isNotEmpty>
+ORDER BY i.MANAGE_ID
+</select>
+
+<select id="system.selectListCodeGroup" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT s.GRP_CD, s.GRP_NM
+FROM HS_CM_CD s
+GROUP BY s.GRP_CD, s.GRP_NM
+ORDER BY s.GRP_NM
+</select>
+<select id="system.selectListCodeGroupDetail" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT 
+	GRP_CD,CM_CD,GRP_NM,CM_NM,CD_SEQ,VAL1,VAL2,VAL3,ETC1,ETC2,IS_USE 
+FROM HS_CM_CD s
+WHERE s.GRP_CD = #grpCd#
+and ifnull(is_del, 'N') != 'Y'
+order by s.cd_seq
+</select>
+
+<insert id="system.insertHS_CM_CD" parameterClass="java.util.HashMap">
+INSERT INTO HS_CM_CD (
+GRP_CD,CM_CD,GRP_NM,CM_NM,CD_SEQ,VAL1,VAL2,VAL3,ETC1,ETC2,IS_USE, in_date, IS_DEL
+)	values (
+#grpCd#, #cmCd#, #grpNm#, #cmNm#, #cdSeq#, #val1#, #val2#, #val3#, #etc1#, #etc2#, #isUse#, now(), 'N'
+)
+</insert>
+
+<insert id="system.updateHS_CM_CD" parameterClass="java.util.HashMap">
+UPDATE HS_CM_CD SET
+<isNotEmpty property="isDel">
+      is_del = #isDel#
+</isNotEmpty>
+<isEmpty property="isDel">
+		 GRP_NM = #grpNm#
+		,CM_NM = #cmNm#
+		,CD_SEQ = #cdSeq#
+		,VAL1 = #val1#
+		,VAL2 = #val2#
+		,VAL3 = #val3#
+		,ETC1 = #etc1#
+		,ETC2 = #etc2#
+		,IS_USE = #isUse#
+		,mo_date = now()
+</isEmpty>
+WHERE GRP_CD = #grpCd# and CM_CD = #cmCd#
+</insert>
+
+<insert id="system.mergeHS_CM_CD" parameterClass="java.util.HashMap">
+
+MERGE INTO HS_CM_CD
+USING DUAL
+ON ( GRP_CD = #grpCd# and CM_CD = #cmCd#) 
+WHEN MATCHED THEN
+UPDATE SET
+<isNotEmpty property="isDel">
+      is_del = #isDel#
+</isNotEmpty>
+<isEmpty property="isDel">
+		 GRP_NM = #grpNm#
+		,CM_NM = #cmNm#
+		,CD_SEQ = #cdSeq#
+		,VAL1 = #val1#
+		,VAL2 = #val2#
+		,VAL3 = #val3#
+		,ETC1 = #etc1#
+		,ETC2 = #etc2#
+		,IS_USE = #isUse#
+		,mo_date = sysdate
+</isEmpty>
+WHEN NOT MATCHED THEN
+INSERT (
+GRP_CD,CM_CD,GRP_NM,CM_NM,CD_SEQ,VAL1,VAL2,VAL3,ETC1,ETC2,IS_USE, in_date, IS_DEL
+)	values (
+#grpCd#, #cmCd#, #grpNm#, #cmNm#, #cdSeq#, #val1#, #val2#, #val3#, #etc1#, #etc2#, #isUse#, sysdate, 'N'
+)
+</insert>
+
+<select id="system.selectMapHsCyApct" parameterClass="java.util.HashMap" resultClass="egovMap">
+  SELECT i.email id, i.email USER_NM
+  FROM HJ_cy_apct_info i
+  WHERE i.email = #id# AND i.PASSWD = fx_pass_enc(#pwd#)
+</select>
+
+<insert id="system.insertHJ_CY_APCT_INFO" parameterClass="java.util.HashMap">
+
+INSERT INTO HJ_cy_apct_info (
+email,PASSWD
+)	values (
+#id#,fx_pass_enc(#pwd#)
+)
+</insert>
+
+<select id="system.selectMapHsHjHakjuk" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT 
+	h.HAKBUN id, h.USER_NM, h.SANGTAE_CD, h.HAKYUN
+FROM HS_HJ_HAKJUK h
+WHERE h.HAKBUN = #id#
+<isNotEqual property="ncsSession" compareValue="Y"> 
+AND h.PASSWD = fx_pass_enc(#pwd#)
+</isNotEqual>
+</select>
+
+<select id="system.selectMapHsIsInsaHakgwa" parameterClass="java.util.HashMap" resultClass="egovMap">
+select 
+ sabun id, USER_NM, i.BUSEO_CD
+from hj_is_insa i
+where jaejik_cd = '1' and ( jikgun_cd = '1000' OR jikgun_cd = '3000') 
+and i.SABUN = #id#
+<isNotEqual property="ncsSession" compareValue="Y">
+AND PASSWD = fx_pass_enc(#pwd#)
+</isNotEqual>
+</select>
+
+<select id="system.selectMapHsIsInsaInGroupMember" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT sabun id, USER_NM, i.BUSEO_CD  
+FROM HJ_IS_INSA i
+WHERE i.SABUN IN (SELECT rPAD(m.MEMBER_ID, 7, ' ') FROM SYS_GROUP_MEMBER m)
+and i.sabun = rPAD(#id#, 7, ' ')
+<isNotEqual property="ncsSession" compareValue="Y">
+AND i.PASSWD = fx_pass_enc(#pwd#)
+</isNotEqual>
+</select>
+
+<select id="system.selectLeftMenu" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT distinct v.*, m.MENU_SEQ, ifnull(m.MENU_SEQ, 0) is_auth
+FROM 
+	(SELECT 
+			s.MENU_SEQ no,UP_MENU_SEQ pno,convert(T_MENU_LEVEL ,UNSIGNED INTEGER) MENU_LEVEL,SYS_CODE,MENU_NAME,MENU_PATH,MENU_TXT,MENU_ICON
+	  FROM (
+	        SELECT  hierarchy_connect_by_parent_eq_prior_id_admleft(MENU_SEQ) AS id, @level AS T_MENU_LEVEL
+	        FROM    (
+	                SELECT  @start_with := 1,
+	                             @id := @start_with,
+	                             @level := 0
+	                ) vars, SYS_MENU
+	        WHERE   @id IS NOT NULL
+	        ) ho
+		   JOIN    SYS_MENU s ON s.MENU_SEQ = ho.id AND s.CONTENTS_YN = 'Y'
+	 WHERE sys_code IN 
+		(SELECT ifnull(url, id) a 
+		   FROM (
+				SELECT 
+					  (SELECT DISTINCT sys_code FROM SYS_MENU m WHERE m.CONTENTS_YN = 'Y') url
+					 ,(
+						SELECT MIN(menu_seq) 
+					      FROM SYS_GROUPMENU WHERE GROUP_SEQ IN ( 
+								SELECT v.GROUP_SEQ 
+								 FROM( 
+									SELECT g.GROUP_SEQ,  concat('ROLE_',ifnull((g.group_eng), concat('GROUP',g.GROUP_SEQ))) authority
+						 			  FROM SYS_GROUP g
+						 			 ) v  
+							<iterate property="authList" prepend="where authority IN" open="(" close=")"  conjunction="," >
+									#authList[]#
+							</iterate> 
+							) 
+					   ) id 
+				  FROM dual
+				) d 
+		)
+	
+	) v, 
+	(SELECT v.*, sm.MENU_SEQ , sm.SYS_CODE
+ 	   FROM (
+			SELECT g.GROUP_SEQ,  concat('ROLE_',ifnull((g.group_eng), concat('GROUP',g.GROUP_SEQ))) authority
+		 	  FROM SYS_GROUP g 
+		 	) v, SYS_GROUPMENU m, SYS_MENU sm
+	   WHERE v.GROUP_SEQ = m.GROUP_SEQ
+		<iterate property="authList" prepend="AND authority IN" open="(" close=")"  conjunction="," >
+			#authList[]#
+		</iterate> 
+ 		AND m.MENU_SEQ = sm.MENU_SEQ
+ 		AND sm.CONTENTS_YN = 'Y'
+ 	) m
+WHERE v.no = m.MENU_SEQ
+<isEqual property="id" compareValue="admin">
+	AND v.no not in ('54', '61')
+</isEqual>
+order by v.pno, v.no
+</select>
+
+<select id="system.selectMenuPath" parameterClass="java.util.HashMap" resultClass="egovMap">
+<!-- 임시 주석  2015.8.28 shlee
+SELECT
+   LISTAGG(MENU_NAME, ' > ') within group (order by no) path_Name 
+FROM SYS_MENU s 
+start with MENU_PATH = #url# 
+CONNECT BY PRIOR up_menu_seq = s.menu_seq)
+GROUP BY SYS_CODE
+-->
+select  MENU_NAME as path_Name
+from SYS_MENU
+where MENU_PATH = '/inuMain.do'
+</select>
+
+<select id="system.selectTopMenu" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT 
+	a.MENU_SEQ no,a.UP_MENU_SEQ pno, MENU_LEVEL,MENU_NAME,ifnull(a.MENU_PATH, '') MENU_PATH , ifnull(c.SYS_CODE, 0) is_auth, a.SYS_CODE,MENU_ICON, MENU_ORDER
+FROM 
+	(SELECT 
+			s.MENU_SEQ ,UP_MENU_SEQ ,level MENU_LEVEL,SYS_CODE,MENU_NAME,MENU_PATH,MENU_TXT,MENU_ICON, MENU_ORDER, s.USE_YN
+		FROM (SELECT 
+				    s.*, level
+				FROM (
+		        SELECT  hierarchy_connect_by_parent_eq_prior_id(MENU_SEQ) AS id, @level AS level
+		        FROM    (
+		                SELECT  @start_with := 1,
+		                        @id := @start_with,
+		                        @level := 0
+		                ) vars, SYS_MENU
+		        WHERE   @id IS NOT NULL
+		        ) ho
+			   JOIN    SYS_MENU s ON s.MENU_SEQ = ho.id<!-- 	AND s.CONTENTS_YN = 'N'	 -->
+			 ) s 
+	    WHERE level <![CDATA[<]]> 3
+		
+	) a  , (  
+	
+	SELECT v.*,
+		sm.MENU_SEQ , sm.SYS_CODE
+	 FROM (
+		SELECT 
+			g.GROUP_SEQ,  concat('ROLE_',ifnull((g.group_eng), concat('GROUP',g.GROUP_SEQ))) authority
+		 FROM SYS_GROUP g ) v, SYS_GROUPMENU m, SYS_MENU sm
+		 where v.GROUP_SEQ = m.GROUP_SEQ
+	 	   AND m.MENU_SEQ = sm.MENU_SEQ
+	 	  <!--  AND sm.CONTENTS_YN = 'N' -->
+		 <iterate property="authList" prepend="AND authority IN" open="(" close=")"  conjunction="," >
+			#authList[]#
+		</iterate> 
+	 	) c
+WHERE a.MENU_SEQ = c.MENU_SEQ
+	AND a.USE_YN = 'Y'
+<isEqual property="id" compareValue="admin">
+	AND a.MENU_SEQ != '54'
+</isEqual>
+ORDER BY  pno, MENU_ORDER
+<!-- SELECT 
+	a.MENU_SEQ no,a.UP_MENU_SEQ pno, MENU_LEVEL,MENU_NAME,ifnull(a.MENU_PATH, b.MENU_PATH) MENU_PATH , ifnull(c.SYS_CODE, 0) is_auth, a.SYS_CODE
+FROM 
+	(SELECT 
+			s.MENU_SEQ ,UP_MENU_SEQ ,LEVEL MENU_LEVEL,SYS_CODE,MENU_NAME,MENU_PATH,MENU_TXT
+		FROM (SELECT 
+				    s.*, LEVEL
+				FROM (
+		        SELECT  hierarchy_connect_by_parent_eq_prior_id(MENU_SEQ) AS id, @level AS level
+		        FROM    (
+		                SELECT  @start_with := 1,
+		                        @id := @start_with,
+		                        @level := 0
+		                ) vars, SYS_MENU
+		        WHERE   @id IS NOT NULL
+		        ) ho
+			   JOIN    SYS_MENU s ON s.MENU_SEQ = ho.id		
+			 ) s 
+	    WHERE LEVEL <![CDATA[<]]> 3
+		
+	) a  , (  
+	SELECT 
+		s.UP_MENU_SEQ, MAX(CASE WHEN c = 1 THEN s.MENU_PATH end) MENU_PATH 
+	FROM (
+			SELECT s.MENU_SEQ, s.UP_MENU_SEQ, s.MENU_LEVEL, s.SYS_CODE, s.MENU_NAME, s.MENU_PATH, s.MENU_TXT, s.rnum c
+            FROM (
+                SELECT s.*, 
+                        (CASE @vjob WHEN s.UP_MENU_SEQ THEN @rownum:=@rownum+1 ELSE @rownum:=1 END) rnum,
+                        (@vjob:=s.UP_MENU_SEQ) vjob
+                FROM SYS_MENU s, (SELECT @vjob:='', @rownum:=0 FROM DUAL) b
+                ORDER BY s.UP_MENU_SEQ, s.MENU_SEQ                  
+             ) s
+		 ) s
+	GROUP BY s.UP_MENU_SEQ ) b, (
+	SELECT v.*,
+		sm.MENU_SEQ , sm.SYS_CODE
+	 FROM (
+		SELECT 
+			g.GROUP_SEQ,  concat('ROLE_',ifnull((g.group_eng), concat('GROUP',g.GROUP_SEQ))) authority
+		 FROM SYS_GROUP g ) v, SYS_GROUPMENU m, SYS_MENU sm
+		 where v.GROUP_SEQ = m.GROUP_SEQ
+	 	   AND m.MENU_SEQ = sm.MENU_SEQ
+		 <iterate property="authList" prepend="AND authority IN" open="(" close=")"  conjunction="," >
+			#authList[]#
+		</iterate> 
+	 	) c
+WHERE a.MENU_SEQ = b.UP_MENU_SEQ
+and a.MENU_SEQ = c.MENU_SEQ
+<isEqual property="id" compareValue="admin">
+	AND a.MENU_SEQ != '54'
+</isEqual>
+ORDER BY pno, no -->
+</select>
+
+<select id="system.selectTopMenuUser" parameterClass="java.util.HashMap" resultClass="egovMap">
+<!-- 임시 주석  2015.8.28 shlee 수정
+SELECT 
+		no, pno ,SYS_CODE,MENU_NAME,MENU_TXT, MENU_PATH
+	  , case when MENU_LEVEL=3 then 1 else MENU_LEVEL end as MENU_LEVEL
+ FROM (
+SELECT 
+    	MENU_SEQ no, UP_MENU_SEQ pno ,LEVEL MENU_LEVEL,SYS_CODE,MENU_NAME,MENU_TXT
+	 , PRIOR MENU_PATH MENU_PATH
+	 ,ROW_NUMBER() OVER(partition BY MENU_SEQ ORDER BY UP_MENU_SEQ,MENU_SEQ) rn
+FROM SYS_MENU s 
+	 start with menu_seq IN (
+		SELECT sm.MENU_SEQ 
+	 	  FROM (
+				SELECT g.GROUP_SEQ,  'ROLE_'||ifnull((g.group_eng), 'GROUP'||g.GROUP_SEQ) authority
+				 FROM SYS_GROUP g 
+				) v, SYS_GROUPMENU m, SYS_MENU sm
+		 where v.GROUP_SEQ = m.GROUP_SEQ
+	 	   AND m.MENU_SEQ = sm.MENU_SEQ
+		<iterate property="authList" prepend="AND authority IN" open="(" close=")"  conjunction="," >
+			#authList[]#
+		</iterate> 
+        AND sm.MENU_PATH IS NOT null 
+		)
+CONNECT BY PRIOR up_menu_seq = s.menu_seq
+)v WHERE menu_level > 1
+AND rn = 1
+ORDER BY pno, no
+-->
+SELECT 
+		no, pno ,SYS_CODE,MENU_NAME,MENU_TXT, MENU_PATH, MENU_ICON
+	  , case when MENU_LEVEL=3 then 1 else MENU_LEVEL end as MENU_LEVEL, MENU_ORDER
+ FROM (
+		SELECT 
+	    		MENU_SEQ no, UP_MENU_SEQ pno ,level MENU_LEVEL,SYS_CODE,MENU_NAME,MENU_TXT
+			 , MENU_PATH, MENU_ICON, MENU_ORDER
+		 	 , s.rnum rn
+		FROM 
+			(
+			SELECT a.*,
+					(CASE @vjob WHEN a.MENU_SEQ THEN @rownum:=@rownum+1 ELSE @rownum:=1 END) rnum,
+			        (@vjob:=a.MENU_SEQ) vjob
+			FROM (
+					 SELECT 
+                            s.*, level
+                        FROM (
+                        SELECT  hierarchy_connect_by_parent_eq_prior_id(MENU_SEQ) AS id, @level AS level
+                        FROM    (
+                                SELECT  @start_with := 1,
+                                        @id := @start_with,
+                                        @level := 0
+                                ) vars, SYS_MENU
+                        WHERE   @id IS NOT NULL
+                        ) ho
+                       JOIN    SYS_MENU s ON s.MENU_SEQ = ho.id	AND s.CONTENTS_YN = 'N'	
+				) a
+                , (SELECT @vjob:='', @rownum:=0 FROM DUAL) b
+				ORDER BY a.MENU_SEQ, a.UP_MENU_SEQ, a.MENU_SEQ
+			 ) s 
+		WHERE s.MENU_SEQ IN  (
+				SELECT sm.MENU_SEQ 
+			 	  FROM (
+						SELECT g.GROUP_SEQ,  concat('ROLE_',ifnull((g.group_eng), concat('GROUP',g.GROUP_SEQ))) authority
+						 FROM SYS_GROUP g 
+						) v, SYS_GROUPMENU m, SYS_MENU sm
+				 where v.GROUP_SEQ = m.GROUP_SEQ
+			 	   AND m.MENU_SEQ = sm.MENU_SEQ
+			 	   AND sm.CONTENTS_YN = 'N'
+				<iterate property="authList" prepend="AND authority IN" open="(" close=")"  conjunction="," >
+					#authList[]#
+				</iterate> 
+		        AND sm.MENU_PATH IS NOT null 
+				)
+	) v 
+WHERE menu_level >= 1
+AND rn = 1
+ORDER BY pno, MENU_ORDER
+</select>
+
+<select id="system.selectCheckUrl" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT
+cast((SELECT COUNT(1) 
+ FROM SYS_GROUPMENU gm, SYS_MENU m
+ WHERE gm.MENU_SEQ = m.MENU_SEQ
+ AND m.MENU_PATH = #url#) as char) group_yn
+ ,
+cast(ifnull(
+(SELECT COUNT(1) 
+ FROM SYS_GROUPMENU gm, SYS_MENU m
+ WHERE gm.MENU_SEQ = m.MENU_SEQ
+ AND m.MENU_PATH = #url#
+  AND gm.GROUP_SEQ IN (
+ SELECT GROUP_SEQ FROM 
+ (SELECT 
+g.GROUP_SEQ,  concat('ROLE_',ifnull((g.group_eng), concat('GROUP',g.GROUP_SEQ))) authority
+ FROM SYS_GROUP g ) v WHERE 1=1 
+ 		 <iterate property="authList" prepend="AND authority IN" open="(" close=")"  conjunction="," >
+			#authList[]#
+		</iterate> 
+  )), 0) as char) auth_yn 
+FROM dual
+ 
+</select>
+
+<select id="system.selectMapManage" parameterClass="java.util.HashMap" resultClass="egovMap">
+
+SELECT m.MANAGE_ID id, m.MANAGE_NM USER_NM 
+,(SELECT CONCAT('ROLE_', gr.GROUP_ENG) FROM SYS_GROUP gr WHERE gr.GROUP_SEQ = '1') role_Nm
+, m.MANAGE_LEVEL
+FROM (
+  SELECT i.*
+  FROM TB_MANAGE i
+  WHERE i.MANAGE_ID = #id#
+    AND i.MANAGE_PWD = #pwd#
+  ) m
+  
+</select>
+
+<select id="system.userMenu" parameterClass="java.util.HashMap" resultClass="egovMap">
+<!-- 
+SELECT  
+	c.CM_CD, c.CM_NM
+FROM HS_CM_CD c
+WHERE c.GRP_CD = 999
+ORDER BY c.CD_SEQ
+ -->
+ SELECT m.MENU_SEQ CM_CD, m.MENU_NAME CM_NM
+FROM TB_USER_MENU m
+WHERE up_menu_seq = 1
+order by m.MENU_SEQ 
+</select>
+
+<select id="system.selectListUserMenu" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT 
+	MENU_SEQ no,UP_MENU_SEQ pno,level MENU_LEVEL,SYS_CODE, MENU_NAME menu_Name ,MENU_PATH,MENU_TXT, AF.*
+	, (SELECT COUNT(*) FROM TB_USER_MENU C WHERE C.UP_MENU_SEQ = hi.MENU_SEQ) AS CHILD_CNT
+FROM    (
+        SELECT  hierarchy_connect_by_parent_eq_prior_id_user(MENU_SEQ) AS id, @level AS level
+        FROM    (
+                SELECT  @start_with := 1,
+                             @id := @start_with,
+                             @level := 0
+                ) vars, TB_USER_MENU
+        WHERE   @id IS NOT NULL
+        ) ho
+JOIN    TB_USER_MENU hi
+ON      hi.MENU_SEQ = ho.id
+LEFT OUTER JOIN TB_ATTACH_FILE AF
+on hi.MENU_SEQ = AF.data_idx and DEL_YN='N' AND FILE_GUBUN = 'VISUAL_IMG' AND GUBUN = 'T'
+WHERE sys_code = #sysCode#
+ORDER BY NO;
+</select>
+
+<select id="system.selectMngUser" parameterClass="java.util.HashMap" resultClass="egovMap">
+	SELECT MANAGE_IDX, MANAGE_ID, MANAGE_NM, MANAGE_LEVEL, DEPARTMENT, B.GROUP_NM, REG_DT
+	FROM TB_MANAGE A
+	LEFT JOIN SYS_GROUP B ON A.MANAGE_LEVEL = B.GROUP_SEQ
+	WHERE 1=1
+		<isNotEmpty property="searchTxt">
+			<isEqual property="searchCondition" compareValue="1">
+				AND MANAGE_ID LIKE "%$searchTxt$%"
+			</isEqual>
+			<isEqual property="searchCondition" compareValue="2">
+				AND MANAGE_NM LIKE "%$searchTxt$%"
+			</isEqual>
+			<isEmpty property="searchCondition">
+				AND (MANAGE_NM LIKE CONCAT('%', #searchTxt#, '%') OR MANAGE_ID LIKE CONCAT('%', #searchTxt#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+		ORDER BY REG_DT DESC
+	<isNotEmpty property="firstIndex">
+		limit #firstIndex#, #pageUnit# 
+	</isNotEmpty>
+</select>
+
+<select id="system.getNextmanageIdx" parameterClass="map" resultClass="integer">
+		 SELECT IFNULL(MAX(MANAGE_IDX) , 0) + 1 MANAGE_IDX FROM TB_MANAGE
+</select>
+
+<insert id="system.registMngUser" parameterClass="map">
+	INSERT INTO TB_MANAGE(
+		 MANAGE_IDX
+		,MANAGE_ID
+		,MANAGE_PWD
+		,MANAGE_NM
+		,MANAGE_LEVEL
+		,DEPARTMENT
+		,USE_YN
+		,REG_DT
+		,REG_ADMIN_ID
+		,REG_IP
+		,DEL_YN
+	) VALUES (
+		 #manageIdx#
+		,#manageId#
+		,#managePwd#
+		,#manageNm#
+		,#manageLevel#
+		,#department#
+		,#useYn#
+		,NOW()
+		,#regId#
+		,#regIp#
+		,'N'
+	)
+</insert>
+
+<select id="system.mngUserDetail" parameterClass="java.util.HashMap" resultClass="egovMap">
+	SELECT MANAGE_IDX, MANAGE_ID, MANAGE_NM, MANAGE_LEVEL, DEPARTMENT, B.GROUP_NM, REG_DT, A.USE_YN, A.DEL_YN
+	FROM TB_MANAGE A
+	LEFT JOIN SYS_GROUP B ON A.MANAGE_LEVEL = B.GROUP_SEQ
+	WHERE MANAGE_IDX = #manageIdx#
+
+</select>
+
+<update id="system.modifyMngUser"  parameterClass="map">
+	UPDATE TB_MANAGE SET
+		  MANAGE_NM = #manageNm#
+		, MANAGE_LEVEL = #manageLevel#
+		, DEPARTMENT = #department#
+		, MOD_DT = NOW()
+		, MOD_ADMIN_ID = #modAdminId#
+		, MOD_IP = #modIp#
+		, USE_YN = #useYn#
+	WHERE MANAGE_IDX = #manageIdx#
+</update>
+
+<update id="system.deleteMngUser" parameterClass="map">
+		UPDATE TB_MANAGE SET
+			  DEL_YN      = 'Y'
+			, MOD_ADMIN_ID     = #mod_id#
+			, MOD_DT      = now()
+			, MOD_IP      = #mod_ip#
+		WHERE MANAGE_IDX     = #manageIdx#
+</update>
+
+<select id="system.selectLayoutDetail" parameterClass="java.util.HashMap" resultClass="egovMap">
+	SELECT COPYRIGHT,
+	       IMG_DATA_IDX, 
+	       REG_ID, MOD_ID, 
+	       B.FILE_PATH, 
+	       B.FILE_GUBUN, 
+	       B.ORG_FILE_NM,
+	       B.FILE_NM,
+	       B.DEL_YN
+	  FROM TB_LAYOUT_MANAGE A,
+	       TB_ATTACH_FILE B 
+	 WHERE A.IMG_DATA_IDX = B.DATA_IDX 
+	   AND B.FILE_GUBUN = 'ADM_LOGO'
+<!-- 	   AND DEL_YN = 'N' -->
+</select>
+
+<update id="system.updateLayout"  parameterClass="map">
+	UPDATE TB_LAYOUT_MANAGE SET
+		  COPYRIGHT = #copyright#
+		, MOD_ID = #regId#
+	WHERE IMG_DATA_IDX = 30
+</update>
+
+<update id="system.updateLayoutImage" parameterClass="map">
+	UPDATE TB_ATTACH_FILE SET 
+		  FILE_NM = #FILE_NM#,
+		  ORG_FILE_NM = #ORG_FILE_NM#,
+		  FILE_PATH = #FILE_PATH#
+	WHERE FILE_GUBUN = 'ADM_LOGO'
+	  AND DATA_IDX = 30
+</update>
+
+<select id="system.selectLayoutImage" parameterClass="map" resultClass="egovMap">
+	SELECT *
+	FROM TB_ATTACH_FILE
+	WHERE DEL_YN = 'N' 
+	  AND FILE_GUBUN like 'ADM_LOGO' 
+	  AND GUBUN = 'A'
+	  AND DATA_IDX = 30
+</select>
+
+<update id="system.registAttachFile" parameterClass="map">
+	UPDATE TB_ATTACH_FILE SET 
+		  FILE_NM = #FILE_NM#,
+		  ORG_FILE_NM = #ORG_FILE_NM#,
+		  FILE_PATH = #FILE_PATH#
+	WHERE FILE_GUBUN = 'ADM_LOGO'
+	  AND DATA_IDX = 30
+</update>
+
+<update id="system.deleteLayout"  parameterClass="map">
+	UPDATE TB_ATTACH_FILE SET
+		  DEL_YN = #logoDelYn#
+	WHERE DATA_IDX = 30
+</update>
+
+<insert id="system.registGroupMember" parameterClass="map">
+	INSERT INTO SYS_GROUP_MEMBER (
+		GROUP_SEQ, MEMBER_ID
+	) VALUES (
+		#manageLevel#
+		,#manageId#
+	)
+</insert>
+
+<update id="system.modifyGroupMember" parameterClass="map">
+	UPDATE SYS_GROUP_MEMBER SET 
+		  GROUP_SEQ = #manageLevel#
+	WHERE MEMBER_ID = #manageId#
+</update>
+	
+<select id="system.selectMenuName" parameterClass="map" resultClass="egovMap">
+	SELECT CONCAT('HOME > ', UP.MENU_NAME, ' > ' , CHILD.MENU_NAME) AS MENU_NAME
+	FROM SYS_MENU UP, SYS_MENU CHILD 
+	WHERE 1 = 1
+		AND UP.MENU_SEQ = CHILD.UP_MENU_SEQ
+		AND CHILD.MENU_PATH = #MENU_PATH# LIMIT 1
+</select>
+
+<select id="system.userListCnt" parameterClass="java.util.HashMap" resultClass="int">
+	SELECT COUNT(*)
+	FROM TB_MANAGE A
+	LEFT JOIN SYS_GROUP B ON A.MANAGE_LEVEL = B.GROUP_SEQ
+	WHERE 1=1
+			<isNotEmpty property="searchTxt">
+			<isEqual property="searchCondition" compareValue="1">
+				AND MANAGE_ID LIKE "%$searchTxt$%"
+			</isEqual>
+			<isEqual property="searchCondition" compareValue="2">
+				AND MANAGE_NM LIKE "%$searchTxt$%"
+			</isEqual>
+			<isEmpty property="searchCondition">
+				AND (MANAGE_NM LIKE CONCAT('%', #searchTxt#, '%') OR MANAGE_ID LIKE CONCAT('%', #searchTxt#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+		ORDER BY REG_DT DESC
+</select>
+
+</sqlMap>            

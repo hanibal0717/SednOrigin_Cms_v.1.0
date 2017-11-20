@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="common">
+
+	<typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+
+	<select id="common.selectShcmcd" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT * FROM (
+SELECT  
+GRP_CD,CM_CD,GRP_NM,CM_NM,CD_SEQ, IS_USE,IS_DEL,IN_DATE 
+,ROW_NUMBER() over(ORDER BY GRP_CD, cd_seq) AS rn
+FROM HS_CM_CD
+) a 
+WHERE rn BETWEEN #start# AND #end#
+	</select>
+
+	<select id="common.selectShcmcdCnt" parameterClass="java.util.HashMap" resultClass="int">
+SELECT  
+COUNT(*) cnt
+FROM HS_CM_CD
+	</select>
+	<select id="common.selectShcmcdCode" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT 
+	GRP_CD,CM_CD,GRP_NM,CM_NM,CD_SEQ, IS_USE,IS_DEL,IN_DATE
+FROM
+HS_CM_CD
+WHERE grp_cd = #grp_cd#
+	</select>
+
+	<select id="common.selectTable" parameterClass="java.util.HashMap"  remapResults="true" resultClass="egovMap">
+SELECT *  
+FROM $table$
+where rownum = 1
+	</select>
+
+
+	<select id="common.selectTB_CODE" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT * FROM (
+SELECT  
+code , code_val, code_val_nm, code_sort, del_yn
+,ROW_NUMBER() over(ORDER BY code, code_sort) AS rn
+FROM TB_CODE
+) a 
+WHERE rn BETWEEN #start# AND #end#
+
+	</select>
+	<select id="common.selectTB_CODECnt" parameterClass="java.util.HashMap" resultClass="int">
+SELECT  
+COUNT(*) cnt
+FROM TB_CODE
+	</select>
+	
+	<insert id="common.mergeTB_CODEGrid" parameterClass="map">
+MERGE INTO TB_CODE
+USING DUAL
+ON (code = #code#)
+WHEN MATCHED THEN
+UPDATE SET
+ code_val=#codeVal#, code_val_nm=#codeValNm#
+ , code_sort=#codeSort#, del_yn=#delYn#
+WHEN NOT MATCHED THEN
+INSERT (code , code_val, code_val_nm, code_sort, del_yn)
+VALUES (#code#, #codeVal#, #codeValNm#, #codeSort#, #delYn#)	
+	</insert>
+
+	<delete id="common.deleteTB_CODEGrid" parameterClass="map">
+delete from tb_code where code = #code#
+	</delete>
+	
+	<select id="common.selectGroupAuth" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT 
+ 'ROLE_'||NVL((g.group_eng), 'GROUP'||s.GROUP_SEQ) authority 
+,m.MENU_PATH uri
+FROM SYS_GROUPMENU s, SYS_MENU m, SYS_GROUP g
+WHERE s.MENU_SEQ = m.MENU_SEQ
+AND s.GROUP_SEQ = g.GROUP_SEQ
+AND m.MENU_PATH IS NOT null
+
+	</select>
+	
+	<select id="common.selectHJ_IS_INSA" parameterClass="java.util.HashMap" resultClass="egovMap">
+SELECT a.* 
+, (SELECT COUNT(sm.GROUP_SEQ) FROM sys_group_member sm WHERE a.member_Id = sm.MEMBER_ID) gcnt
+FROM (
+SELECT  
+i.SABUN member_Id, i.USER_NM
+,ROW_NUMBER() over(ORDER BY SABUN) AS rn
+FROM HJ_IS_INSA i
+	<isNotEmpty property="searchTxt">
+		where (i.SABUN = #searchTxt# or i.USER_NM like '%'||searchTxt||'%')
+	</isNotEmpty>
+) a
+WHERE rn BETWEEN #start# AND #end#
+
+	</select>
+	<select id="common.selectHJ_IS_INSACnt" parameterClass="java.util.HashMap" resultClass="int">
+SELECT  
+COUNT(*) cnt
+FROM HJ_IS_INSA
+	<isNotEmpty property="searchTxt">
+		where (i.SABUN = #searchTxt# or i.USER_NM like '%'||searchTxt||'%')
+	</isNotEmpty>
+
+	</select>
+</sqlMap>            

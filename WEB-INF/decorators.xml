@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<decorators defaultdir="/WEB-INF/jsp/inu/common/decorators">
+	
+	<decorator name="default" page="empty.jsp">
+		<pattern>/*</pattern>
+	</decorator>	
+    <decorator name="defaultPage" page="defaultPage.jsp" />
+    <decorator name="popupPage" page="popupPage.jsp" />
+    <decorator name="mPage" page="mPage.jsp" />
+    
+    <excludes>
+        <pattern>/index.jsp</pattern>
+        <pattern>/SSO_ncs.jsp</pattern>
+        <pattern>/jsp/logout.jsp</pattern>
+        <pattern>/hjcy/download.do</pattern>
+        <pattern>/SmartEditor/SmartEditor2Skin.jsp</pattern>
+    </excludes>	
+</decorators>

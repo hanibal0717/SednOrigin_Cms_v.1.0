@@ -1,0 +1,720 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="STB">
+
+	<typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+  	<resultMap id="STBData" class="egovMap">
+        <result property="stbID" column="ID"/>
+        <result property="stbNo" column="NO"/>
+        <result property="stbName" column="NAME"/>
+        <result property="stbMAC" column="MAC"/>
+        <result property="stbIP" column="IP_ADDR" />
+        <result property="stbGroupID" column="GROUP_ID" />
+        <result property="stbGroupName" column="GROUP_NAME" />
+        <result property="stbStatus" column="STATUS" />
+        <result property="stbLastOnTime" column="LAST_ON_TIME" />
+        <result property="stbNote" column="NOTE" />
+    </resultMap>
+	
+	<resultMap id="groupTree" class="egovMap">
+        <result property="groupID" column="ID"/>
+        <result property="parentID" column="PID"/>
+        <result property="position" column="POSITION"/>
+        <result property="groupName" column="NAME" />
+        <result property="numSTB" column="NUM_STB" />
+    </resultMap>
+
+	<resultMap id="vodFullList" class="egovMap">
+        <result property="id" column="VOD_IDX"/>
+        <result property="title" column="VOD_TITLE"/>
+        <result property="duration" column="VOD_PLAY_TIME"/>
+        <result property="menu" column="MENU"/>
+    </resultMap>
+    
+    <resultMap id="vodList" class="egovMap">
+        <result property="id" column="VOD_IDX"/>
+        <result property="title" column="VOD_TITLE"/>
+        <result property="duration" column="VOD_PLAY_TIME"/>
+    </resultMap>
+    
+    <resultMap id="categoryList" class="egovMap">
+        <result property="id" column="MENU_SEQ"/>
+        <result property="name" column="MENU_NAME"/>
+        <result property="numVOD" column="NUM_VOD"/>
+    </resultMap>
+    
+    <resultMap id="channelList" class="egovMap">
+    	<result property="channelIndex" column="CH_IDX"/>
+        <result property="channelName" column="CH_NM"/>
+    </resultMap>
+   
+    <resultMap id="programList" class="egovMap">
+    	<result property="channelIndex" column="CH_IDX"/>
+        <result property="channelName" column="CH_NM"/>
+        <result property="programName" column="BROAD_NM"/>
+        <result property="start" column="START"/>
+        <result property="end" column="END"/>
+        <result property="liveURL" column="LIVE_URL"/>
+    </resultMap>
+
+    <resultMap id="menuList" class="egovMap">
+        <result property="id" column="MENU_SEQ"/>
+        <result property="name" column="MENU_NAME"/>
+    </resultMap>
+    
+  	<resultMap id="ScheduleData" class="egovMap">
+        <result property="scheduleID" column="ID"/>
+        <result property="scheduleName" column="NAME"/>
+        <result property="start" column="START" javaType="java.lang.String"/>
+        <result property="end" column="END" javaType="java.lang.String"/>
+        <result property="targetType" column="TARGET_TYPE" />
+        <result property="sourceType" column="SOURCE_TYPE" />
+        <result property="liveChannel" column="LIVE_CH_IDX" />
+        <result property="liveStreamURL" column="LIVE_STREAM_URL" />
+        <result property="caption" column="CAPTION" />
+        <result property="captionSize" column="CAPTION_SIZE" />
+        <result property="captionSpeed" column="CAPTION_SPEED" />
+        <result property="captionTextColor" column="CAPTION_TEXT_COLOR" />
+        <result property="captionBGColor" column="CAPTION_BG_COLOR" />
+        <result property="color" column="COLOR" />
+        <result property="imgPath" column="IMAGE_PATH" />
+        <result property="desc" column="DESC_TEXT" />
+    </resultMap>
+
+    <resultMap id="totalStatByVOD" class="egovMap">
+    	<result property="vodIdx" column="VOD_IDX"/>
+    	<result property="vodTitle" column="VOD_TITLE"/>
+    	<result property="menu" column="MENU"/>
+    	<result property="totalCnt" column="TOTAL"/>
+    	<result property="regDate" column="REG_DT"/>
+    </resultMap>
+    <resultMap id="dayStatByVOD" class="egovMap">
+    	<result property="vodIdx" column="VOD_IDX"/>
+    	<result property="playDate" column="PLAY_DATE" javaType="java.lang.String"/>
+    	<result property="dayCnt" column="DAY_COUNT"/>
+    </resultMap>
+
+    <resultMap id="totalStatBySTB" class="egovMap">
+    	<result property="id" column="ID"/>
+    	<result property="name" column="NAME"/>
+    	<result property="totalCnt" column="TOTAL"/>
+    	<result property="regDate" column="REG_DT"/>
+    </resultMap>
+    <resultMap id="dayStatBySTB" class="egovMap">
+    	<result property="id" column="STB_ID"/>
+    	<result property="playDate" column="PLAY_DATE" javaType="java.lang.String"/>
+    	<result property="dayCnt" column="DAY_COUNT"/>
+    </resultMap>
+    
+    <resultMap id="connectionStat" class="egovMap">
+    	<result property="connected" column="connected"/>
+    	<result property="disconnected" column="disconnected"/>
+    </resultMap>
+    <resultMap id="activityStat" class="egovMap">
+    	<result property="status" column="STATUS"/>
+    	<result property="count" column="COUNT"/>
+    </resultMap>
+    
+    <resultMap id="dayStat" class="egovMap">
+    	<result property="day" column="DAY" javaType="java.lang.String"/>
+    	<result property="hour" column="HOUR" javaType="java.lang.String"/>
+    	<result property="cnt" column="CNT"/>
+    </resultMap>
+ 
+    <resultMap id="monthStat" class="egovMap">
+    	<result property="day" column="DAY" javaType="java.lang.String"/>
+    	<result property="month" column="MONTH" javaType="java.lang.String"/>    	
+    	<result property="cnt" column="CNT"/>
+    </resultMap>
+    
+    <resultMap id="yearStat" class="egovMap">
+    	<result property="year" column="YEAR" javaType="java.lang.String"/>    
+    	<result property="month" column="MONTH" javaType="java.lang.String"/>
+    	<result property="cnt" column="CNT"/>
+    </resultMap>
+    
+    <resultMap id="stbConfigMap" class="egovMap">
+    	<result property="logoImgYN" column="LOGO_IMG_YN"/>
+    	<result property="logoImgUrl" column="LOGO_IMG_URL"/>
+    	<result property="logoText" column="LOGO_TEXT"/>
+    	<result property="bgImgYN" column="BG_IMG_YN"/>
+    	<result property="bgImgUrl" column="BG_IMG_URL"/>
+    	<result property="bgVideoUrl" column="BG_VIDEO_URL"/>
+    	<result property="streamingServerUrl" column="STREAMING_SERVER_URL"/>
+    	<result property="autoSyncTime" column="AUTO_SYNC_TIME"/>
+    	<result property="firmwareVersion" column="FIRMWARE_VERSION"/>
+    	<result property="firmwareModifyDT" column="FIRMWARE_MODIFY_DT"/>
+    	<result property="banner1ImgUrl" column="BANNER1_IMG_PATH"/>
+    	<result property="banner2ImgUrl" column="BANNER2_IMG_PATH"/>
+    </resultMap>
+ 		
+    <select id="STB.dataListCnt" parameterClass="map" resultClass="Integer">
+			SELECT 
+				COUNT(*) CNT
+			FROM TB_STB A, TB_STB_GROUP B, TB_STB_STATUS C
+			WHERE A.GROUP_ID = B.ID AND A.STATUS = C.STATUS_CODE
+		<isNotEmpty property="search_word">
+			AND (A.NAME LIKE #search_word#
+				OR A.MAC LIKE #search_word#
+				OR A.IP_ADDR LIKE #search_word#
+				OR B.NAME LIKE #search_word#
+				OR C.STATUS_DESC LIKE #search_word#)
+		</isNotEmpty>
+		<isNotEmpty property="group_id">
+			AND B.ID = #group_id#
+		</isNotEmpty>
+	</select>
+	
+	<select id="STB.dataList" parameterClass="map" resultMap="STBData">
+			SELECT 
+				      A.ID AS ID
+				    , A.NO AS NO
+					, A.NAME AS NAME
+					, A.MAC AS MAC
+					, A.IP_ADDR AS IP_ADDR
+					, A.GROUP_ID AS GROUP_ID
+					, B.NAME AS GROUP_NAME
+					, IF(TIMEDIFF(NOW(), A.LAST_PING_TIME) <![CDATA[<=]]> '00:01:10', C.STATUS_DESC, 'OFF') STATUS
+					, DATE_FORMAT(A.LAST_ON_TIME, '%Y-%m-%d %H:%i:%s') AS LAST_ON_TIME
+					, A.NOTE AS NOTE
+			FROM TB_STB A, TB_STB_GROUP B, TB_STB_STATUS C
+			WHERE A.GROUP_ID = B.ID AND A.STATUS = C.STATUS_CODE
+		<isNotEmpty property="search_word">
+			AND (A.ID = #search_number#
+				OR A.NAME LIKE #search_word#
+				OR A.MAC LIKE #search_word#
+				OR A.IP_ADDR LIKE #search_word#
+				OR B.NAME LIKE #search_word#
+				OR C.STATUS_DESC LIKE #search_word#)
+		</isNotEmpty>	
+		<isNotEmpty property="group_id">
+			AND B.ID = #group_id#
+		</isNotEmpty>
+			ORDER BY ID DESC
+		<isNotEmpty property="firstIndex">
+			 limit #firstIndex#, #pageUnit# 
+		</isNotEmpty>
+	</select>
+
+	<select id="STB.groupTree" resultMap="groupTree">
+			SELECT 
+				      A.ID AS ID
+					, A.PID AS PID
+					, A.POSITION AS POSITION
+					, A.NAME AS NAME
+					, COUNT(B.ID) AS NUM_STB
+			FROM TB_STB_GROUP A LEFT JOIN TB_STB B
+			ON A.ID = B.GROUP_ID
+			GROUP BY A.ID
+			ORDER BY A.PID, A.POSITION
+	</select>
+	
+	<select id="STB.vodList" resultMap="vodFullList">
+			SELECT
+					  VOD_IDX
+					, VOD_TITLE
+					, VOD_PLAY_TIME
+					, MENU
+			FROM TB_VOD_DATA
+			WHERE DEL_YN='N'
+			ORDER BY REG_DT DESC, VOD_IDX DESC
+	</select>
+	
+	<select id="STB.categoryList" parameterClass="map" resultMap="categoryList">
+			SELECT
+					  MENU_SEQ
+					, MENU_NAME
+					, (SELECT COUNT(VOD_IDX) 
+						FROM TB_VOD_DATA 
+						WHERE MENU LIKE CONCAT('%',MENU_SEQ,'%') AND DEL_YN = 'N') NUM_VOD
+			FROM TB_USER_MENU 
+			WHERE UP_MENU_SEQ = #rootMenu#
+			ORDER BY MENU_SEQ
+	</select>
+	
+	<select id="STB.captionList" resultClass="String">
+			SELECT
+					  TEXT
+			FROM TB_STB_RECENT_CAPTION
+			ORDER BY MODIFY_DT DESC
+	</select>
+	
+	<select id="STB.channelList" resultMap="channelList">
+			SELECT
+					  CH_NM
+					  , CH_IDX
+			FROM TB_CHANNEL_INFO
+	</select>
+	
+	<select id="STB.programList" resultMap="programList">
+			SELECT 
+					A.CH_IDX
+					, B.CH_NM
+					, A.BROAD_NM
+					, A.LIVE_URL
+					, CONCAT(START_DATE, ' ', START_HH, ':', START_MM) START
+					, CONCAT(END_DATE, ' ', END_HH, ':', END_MM) END
+			FROM TB_LIVE_BROAD_MANAGE A
+				, TB_CHANNEL_INFO B
+			WHERE A.CH_IDX = B.CH_IDX
+					AND STR_TO_DATE(CONCAT(END_DATE, ' ', END_HH, ':', END_MM), '%Y-%m-%d %H:%i') > NOW()
+	</select>
+	
+	<select id="STB.vodListBySchedule" resultMap="vodList" parameterClass="map">
+			SELECT
+					  A.VOD_IDX
+					, A.VOD_TITLE
+					, A.VOD_PLAY_TIME
+			FROM TB_VOD_DATA A,
+				 TB_STB_SCHEDULE_VOD B
+			WHERE A.VOD_IDX = B.VOD_ID AND B.SCHEDULE_ID = #scheduleID#
+			ORDER BY B.PLAY_ORDER
+	</select>
+	
+	<select id="STB.groupListBySchedule" resultClass="String" parameterClass="map">
+			SELECT
+					  GROUP_ID
+			FROM TB_STB_SCHEDULE_GROUP
+			WHERE SCHEDULE_ID = #scheduleID#
+	</select>
+	
+	<delete id="STB.deleteVODBySchedule" parameterClass="map">
+			DELETE
+			FROM TB_STB_SCHEDULE_VOD
+			WHERE SCHEDULE_ID = #scheduleID#
+	</delete>
+	
+	<delete id="STB.deleteGroupBySchedule" parameterClass="map">
+			DELETE
+			FROM TB_STB_SCHEDULE_GROUP
+			WHERE SCHEDULE_ID = #scheduleID#
+	</delete>
+	
+	<update id="STB.createGroup" parameterClass="map">
+			INSERT
+			INTO TB_STB_GROUP (PID, POSITION, NAME)
+			SELECT #parentID#, IFNULL(MAX(POSITION)+1, 0), #name#
+			FROM TB_STB_GROUP
+			WHERE PID = #parentID#
+	</update>
+	
+	<select id="STB.lastInsertID" resultClass="String">
+			SELECT LAST_INSERT_ID()
+	</select>
+	
+	<update id="STB.renameGroup" parameterClass="map">
+			UPDATE TB_STB_GROUP
+			SET NAME = #name#
+			WHERE ID = #groupID#
+	</update>
+	
+	<update id="STB.moveToRoot" parameterClass="map">
+			UPDATE TB_STB
+			SET GROUP_ID = 1
+			WHERE 
+			<iterate prepend="GROUP_ID IN" property="groupIDList" open="(" close=")" conjunction=",">
+				#groupIDList[]#
+			</iterate> 
+	</update>
+	
+	<update id="STB.shrinkPosition" parameterClass="map">
+			UPDATE TB_STB_GROUP
+			SET POSITION = POSITION - 1
+			WHERE PID = #parentID# AND POSITION >= #position#
+	</update>
+	
+	<update id="STB.expandPosition" parameterClass="map">
+			UPDATE TB_STB_GROUP
+			SET POSITION = POSITION + 1
+			WHERE PID = #parentID# AND POSITION >= #position#
+	</update>
+	
+	<update id="STB.moveGroup" parameterClass="map">
+			UPDATE TB_STB_GROUP
+			SET PID = #parentID#, POSITION = #position#
+			WHERE ID = #groupID#
+	</update>
+	
+	<delete id="STB.deleteGroup" parameterClass="map">
+			DELETE
+			FROM TB_STB_GROUP
+			WHERE
+			<iterate prepend="ID IN" property="groupIDList" open="(" close=")" conjunction=",">
+				#groupIDList[]#
+			</iterate> 
+	</delete>
+	
+	<update id="STB.registerSTB" parameterClass="map">
+			INSERT
+			INTO TB_STB (NO, NAME, MAC, IP_ADDR, GROUP_ID, NOTE, LAST_ON_TIME, REG_DT)
+			VALUES ((SELECT * FROM (SELECT MAX(NO)+1 FROM TB_STB) T), #stbName#, #stbMAC#, #stbIP#, #stbGroup#, #stbNote#, #lastOnTime#, #lastOnTime#)
+	</update>
+	
+	<update id="STB.modifySTB" parameterClass="map">
+			UPDATE TB_STB
+			SET   NAME = #stbName#
+				, MAC = #stbMAC#
+				, IP_ADDR = #stbIP#
+				, GROUP_ID = #stbGroup#
+				, NOTE = #stbNote#
+			WHERE ID = #stbID#
+	</update>
+	
+	<delete id="STB.deleteSTB" parameterClass="map">
+			DELETE
+			FROM TB_STB
+			WHERE
+			<iterate prepend="ID IN" property="stbIDList" open="(" close=")" conjunction=",">
+				#stbIDList[]#
+			</iterate> 
+	</delete>
+	
+	<update id="STB.reassignNO">
+			UPDATE TB_STB S
+					JOIN
+					(SELECT
+							A.NO
+							, @ROWNUM := @ROWNUM + 1 AS ROWNUM
+					FROM TB_STB A, (SELECT @ROWNUM := 0) B
+					ORDER BY REG_DT) T
+ 			SET S.NO = T.ROWNUM
+ 			WHERE S.NO = T.NO
+	</update>
+	
+	<update id="STB.createSchedule" parameterClass="map">
+			INSERT
+			INTO TB_STB_SCHEDULE (NAME, START, END, TARGET_TYPE, SOURCE_TYPE, LIVE_CH_IDX, LIVE_STREAM_URL, CAPTION, CAPTION_SIZE, CAPTION_SPEED, CAPTION_TEXT_COLOR, CAPTION_BG_COLOR, COLOR, IMAGE_PATH, DESC_TEXT)
+			VALUES (#scheduleName#, #start#, #end#, #targetType#, #sourceType#, #liveChannel#, #liveStream#, #caption#, #captionSize#, #captionSpeed#, #captionTextColor#, #captionBGColor#, #color#, #imgPath#, #desc#)
+	</update>
+
+	<update id="STB.updateSchedule" parameterClass="map">
+			UPDATE TB_STB_SCHEDULE
+			SET NAME = #scheduleName#
+				, START = #start#
+				, END = #end#
+				, TARGET_TYPE = #targetType#
+				, SOURCE_TYPE = #sourceType#
+				, LIVE_CH_IDX = #liveChannel#
+				, LIVE_STREAM_URL = #liveStream#
+				, CAPTION = #caption#
+				, CAPTION_SIZE = #captionSize#
+				, CAPTION_SPEED = #captionSpeed#
+				, CAPTION_TEXT_COLOR = #captionTextColor#
+				, CAPTION_BG_COLOR = #captionBGColor#
+				, COLOR = #color#
+				, IMAGE_PATH = #imgPath#
+				, DESC_TEXT = #desc#
+			WHERE ID = #scheduleID#
+	</update>
+	
+	<update id="STB.updateScheduleTime" parameterClass="map">
+			UPDATE TB_STB_SCHEDULE
+			SET START = #start#
+				, END = #end#
+			WHERE ID = #scheduleID#
+	</update>
+	
+	<delete id="STB.deleteSchedule" parameterClass="map">
+			DELETE
+			FROM TB_STB_SCHEDULE
+			WHERE ID = #scheduleID#
+	</delete>
+	
+	<update id="STB.insertVODlist" parameterClass="map">
+			INSERT
+			INTO TB_STB_SCHEDULE_VOD (SCHEDULE_ID, VOD_ID, PLAY_ORDER)
+			VALUES (#scheduleID#, #vodID#, #playOrder#)
+	</update>
+	
+	<update id="STB.insertGroupList" parameterClass="map">
+			INSERT
+			INTO TB_STB_SCHEDULE_GROUP (SCHEDULE_ID, GROUP_ID)
+			VALUES (#scheduleID#, #groupID#)
+	</update>
+	
+	<select id="STB.listSchedule" parameterClass="map" resultMap="ScheduleData">
+			SELECT 
+				    ID
+				    , NAME
+				    , START
+				    , END
+				    , TARGET_TYPE
+				    , SOURCE_TYPE
+				    , LIVE_CH_IDX
+				    , LIVE_STREAM_URL
+				    , CAPTION
+				    , CAPTION_SIZE
+				    , CAPTION_SPEED
+				    , CAPTION_TEXT_COLOR
+				    , CAPTION_BG_COLOR
+				    , COLOR
+				    , SUBSTRING(IMAGE_PATH, INSTR(IMAGE_PATH, '/upload/'), LENGTH(IMAGE_PATH)) AS IMAGE_PATH
+				    , DESC_TEXT
+			FROM TB_STB_SCHEDULE
+			WHERE <![CDATA[(START > #start# AND START < #end#) OR (END > #start# AND END < #end#)]]>
+			<!-- duration이 1주일을 넘어가는 스케줄은 없다고 가정 -->
+	</select>
+
+	<update id="STB.addRecentCaption" parameterClass="map">
+			INSERT 
+			INTO TB_STB_RECENT_CAPTION (TEXT, MODIFY_DT) 
+			VALUES(#caption#, NOW()) 
+			ON DUPLICATE KEY UPDATE MODIFY_DT = NOW()
+	</update>
+	
+	<select id="STB.menuList" resultMap="menuList">
+			SELECT
+					  MENU_SEQ
+					, MENU_NAME
+			FROM TB_USER_MENU
+	</select>
+	
+	<select id="STB.statsTotalByVOD" parameterClass="map" resultMap="totalStatByVOD">
+			SELECT
+					B.VOD_IDX
+					, B.VOD_TITLE
+					, B.MENU
+					, COUNT(A.VOD_IDX) TOTAL
+					, B.REG_DT
+			FROM TB_STB_VOD_HISTORY A RIGHT JOIN TB_VOD_DATA B
+					ON A.VOD_IDX = B.VOD_IDX
+			WHERE B.DEL_YN = 'N'
+			GROUP BY B.VOD_IDX
+			ORDER BY TOTAL DESC
+			LIMIT #firstIndex#, #pageSize#
+	</select>
+	
+	<select id="STB.statsDayByVOD" parameterClass="map" resultMap="dayStatByVOD">
+			SELECT
+					A.VOD_IDX
+					, PLAY_DATE
+					, COUNT(*) DAY_COUNT
+			FROM TB_STB_VOD_HISTORY A, 
+				(SELECT TD.VOD_IDX, COUNT(TH.VOD_IDX) TOTAL
+				 FROM TB_STB_VOD_HISTORY TH RIGHT JOIN (SELECT VOD_IDX FROM TB_VOD_DATA WHERE DEL_YN = 'N') TD
+				 ON TH.VOD_IDX = TD.VOD_IDX
+				 GROUP BY TD.VOD_IDX
+				 ORDER BY TOTAL DESC
+				 LIMIT #firstIndex#, #pageSize#) B
+			WHERE A.VOD_IDX = B.VOD_IDX
+				AND A.PLAY_DATE BETWEEN #startDate# AND #endDate#
+			GROUP BY A.VOD_IDX, A.PLAY_DATE
+			ORDER BY B.TOTAL DESC, PLAY_DATE
+	</select>
+	
+	<select id="STB.statsTotalBySTB" parameterClass="map" resultMap="totalStatBySTB">
+			SELECT
+					B.ID
+					, B.NAME
+					, COUNT(A.VOD_IDX) TOTAL
+					, DATE(B.REG_DT) AS REG_DT
+			FROM TB_STB_VOD_HISTORY A RIGHT JOIN TB_STB B
+					ON A.STB_ID = B.ID
+			GROUP BY B.ID
+			ORDER BY TOTAL DESC
+			LIMIT #firstIndex#, #pageSize#
+	</select>
+	
+	<select id="STB.statsDayBySTB" parameterClass="map" resultMap="dayStatBySTB">
+			SELECT
+					A.STB_ID
+					, PLAY_DATE
+					, COUNT(*) DAY_COUNT
+			FROM TB_STB_VOD_HISTORY A, 
+				(SELECT STB_ID, COUNT(*) TOTAL
+				 FROM TB_STB_VOD_HISTORY
+				 GROUP BY STB_ID
+				 LIMIT #firstIndex#, #pageSize#) B
+			WHERE A.STB_ID = B.STB_ID
+				AND A.PLAY_DATE BETWEEN #startDate# AND #endDate#
+			GROUP BY A.STB_ID, A.PLAY_DATE
+			ORDER BY B.TOTAL DESC, PLAY_DATE
+	</select>
+	
+	<select id="STB.countVODs" resultClass="Integer">
+			SELECT COUNT(VOD_IDX)
+			FROM TB_VOD_DATA
+			WHERE DEL_YN = 'N'
+	</select>
+
+	<select id="STB.countSTBs" resultClass="Integer">
+			SELECT COUNT(ID)
+			FROM TB_STB
+	</select>
+	
+	<select id="STB.connectionStat" resultMap="connectionStat">
+			SELECT
+					COUNT(ID) AS CONNECTED
+					, ((SELECT COUNT(ID) FROM TB_STB) - COUNT(ID)) AS DISCONNECTED
+			FROM TB_STB
+			WHERE STATUS = 1 OR <![CDATA[TIMEDIFF(NOW(), LAST_PING_TIME) <= '00:01:10']]>
+	</select>
+	
+	<select id="STB.activityStat" resultMap="activityStat">
+			SELECT
+					STATUS
+					, COUNT(ID) AS COUNT
+			FROM (SELECT
+						ID
+						, IF(TIMEDIFF(NOW(), LAST_PING_TIME) <![CDATA[<=]]> '00:01:10', STATUS, 1) STATUS
+				  FROM TB_STB) A
+			GROUP BY STATUS
+	</select>
+	
+	<select id="STB.statDay" parameterClass="map" resultMap="dayStat">
+			SELECT
+					PLAY_DATE DAY
+					, CASE HOUR(PLAY_TIME) WHEN 0 THEN '24' ELSE LPAD(HOUR(PLAY_TIME), 2, '0') END HOUR
+					, COUNT(*) CNT
+			FROM TB_STB_VOD_HISTORY 
+			WHERE PLAY_DATE <![CDATA[>=]]> #start# AND PLAY_DATE <![CDATA[<=]]> #end#
+			GROUP BY PLAY_DATE, HOUR(PLAY_TIME)
+			UNION
+			SELECT
+					'TOTAL' DAY
+					, CASE HOUR(PLAY_TIME) WHEN 0 THEN '24' ELSE LPAD(HOUR(PLAY_TIME), 2, '0') END HOUR
+					, COUNT(*) CNT 
+			FROM TB_STB_VOD_HISTORY 
+			WHERE PLAY_DATE <![CDATA[>=]]> #start# AND PLAY_DATE <![CDATA[<=]]> #end#
+			GROUP BY HOUR(PLAY_TIME)
+			UNION
+			SELECT
+					PLAY_DATE DAY
+					, 'TOTAL' HOUR
+					, COUNT(*) CNT 
+			FROM TB_STB_VOD_HISTORY 
+			WHERE PLAY_DATE <![CDATA[>=]]> #start# AND PLAY_DATE <![CDATA[<=]]> #end#
+			GROUP BY PLAY_DATE
+			ORDER BY DAY, HOUR
+	</select>
+	
+	<select id="STB.statMonth" parameterClass="map" resultMap="monthStat">
+			SELECT
+					DATE_FORMAT(PLAY_DATE, '%Y-%m') MONTH
+					, LPAD(DAY(PLAY_DATE), 2, '0') DAY
+					, COUNT(*) CNT
+			FROM TB_STB_VOD_HISTORY 
+			WHERE DATE_FORMAT(PLAY_DATE, '%Y-%m') <![CDATA[>=]]> #start# AND DATE_FORMAT(PLAY_DATE, '%Y-%m') <![CDATA[<=]]> #end#
+			GROUP BY DATE_FORMAT(PLAY_DATE, '%Y-%m'), DAY(PLAY_DATE)
+			UNION
+			SELECT
+					'TOTAL' MONTH
+					, LPAD(DAY(PLAY_DATE), 2, '0') DAY
+					, COUNT(*) CNT 
+			FROM TB_STB_VOD_HISTORY 
+			WHERE DATE_FORMAT(PLAY_DATE, '%Y-%m') <![CDATA[>=]]> #start# AND DATE_FORMAT(PLAY_DATE, '%Y-%m') <![CDATA[<=]]> #end#
+			GROUP BY DAY(PLAY_DATE)
+			UNION
+			SELECT
+					DATE_FORMAT(PLAY_DATE, '%Y-%m') MONTH
+					, 'TOTAL' DAY
+					, COUNT(*) CNT 
+			FROM TB_STB_VOD_HISTORY 
+			WHERE DATE_FORMAT(PLAY_DATE, '%Y-%m') <![CDATA[>=]]> #start# AND DATE_FORMAT(PLAY_DATE, '%Y-%m') <![CDATA[<=]]> #end#
+			GROUP BY DATE_FORMAT(PLAY_DATE, '%Y-%m')
+			ORDER BY MONTH, DAY
+	</select>
+	
+	<select id="STB.statYear" parameterClass="map" resultMap="yearStat">
+			SELECT
+					YEAR(PLAY_DATE) YEAR
+					, LPAD(MONTH(PLAY_DATE), 2, '0') MONTH
+					, COUNT(*) CNT
+			FROM TB_STB_VOD_HISTORY 
+		<isNotEmpty property="start">
+			WHERE YEAR(PLAY_DATE) <![CDATA[>=]]> #start# AND YEAR(PLAY_DATE) <![CDATA[<=]]> #end#
+		</isNotEmpty>
+			GROUP BY YEAR(PLAY_DATE), MONTH(PLAY_DATE)
+			UNION
+			SELECT
+					'TOTAL' YEAR
+					, LPAD(MONTH(PLAY_DATE), 2, '0') MONTH
+					, COUNT(*) CNT 
+			FROM TB_STB_VOD_HISTORY
+		<isNotEmpty property="start">
+			WHERE YEAR(PLAY_DATE) <![CDATA[>=]]> #start# AND YEAR(PLAY_DATE) <![CDATA[<=]]> #end#
+		</isNotEmpty> 
+			GROUP BY MONTH(PLAY_DATE)
+			UNION
+			SELECT
+					YEAR(PLAY_DATE) YEAR
+					, 'TOTAL' MONTH
+					, COUNT(*) CNT 
+			FROM TB_STB_VOD_HISTORY
+		<isNotEmpty property="start">
+			WHERE YEAR(PLAY_DATE) <![CDATA[>=]]> #start# AND YEAR(PLAY_DATE) <![CDATA[<=]]> #end#
+		</isNotEmpty> 
+			GROUP BY YEAR(PLAY_DATE)
+			ORDER BY YEAR, MONTH
+	</select>
+	
+	<update id="STB.updateConfiguration" parameterClass="map">
+			UPDATE TB_STB_CONFIGURATION
+			SET DUMMY = 1
+		<isNotEmpty property="logo_img_yn">
+			, LOGO_IMG_YN = #logo_img_yn#
+		</isNotEmpty>
+		<isNotEmpty property="logo_img_path">
+			, LOGO_IMG_PATH = #logo_img_path#
+		</isNotEmpty>
+		<isNotEmpty property="logo_text">
+			, LOGO_TEXT = #logo_text#
+		</isNotEmpty>
+		<isNotEmpty property="logo_modify_dt">
+			, LOGO_MODIFY_DT = #logo_modify_dt#
+		</isNotEmpty>
+		<isNotEmpty property="bg_img_yn">
+			, BG_IMG_YN = #bg_img_yn#
+		</isNotEmpty>
+		<isNotEmpty property="bg_img_path">
+			, BG_IMG_PATH = #bg_img_path#
+		</isNotEmpty>
+		<isNotEmpty property="bg_video_path">
+			, BG_VIDEO_PATH = #bg_video_path#
+		</isNotEmpty>
+		<isNotEmpty property="bg_modify_dt">
+			, BG_MODIFY_DT = #bg_modify_dt#
+		</isNotEmpty>
+		<isNotEmpty property="firmware_version">
+			, FIRMWARE_VERSION = #firmware_version#
+		</isNotEmpty>
+		<isNotEmpty property="firmware_path">
+			, FIRMWARE_PATH = #firmware_path#
+		</isNotEmpty>
+		<isNotEmpty property="firmware_modify_dt">
+			, FIRMWARE_MODIFY_DT = #firmware_modify_dt#
+		</isNotEmpty>
+		<isNotEmpty property="streaming_server_url">
+			, STREAMING_SERVER_URL = #streaming_server_url#
+		</isNotEmpty>
+		<isNotEmpty property="auto_sync_time">
+			, AUTO_SYNC_TIME = #auto_sync_time#
+		</isNotEmpty>
+		<isNotEmpty property="banner1_img_path">
+			, BANNER1_IMG_PATH = #banner1_img_path#
+		</isNotEmpty>
+		<isNotEmpty property="banner2_img_path">
+			, BANNER2_IMG_PATH = #banner2_img_path#
+		</isNotEmpty>
+			WHERE DUMMY = 1
+	</update>
+	
+	<select id="STB.configuration" resultMap="stbConfigMap">
+			SELECT
+					LOGO_IMG_YN
+					, SUBSTRING(LOGO_IMG_PATH, INSTR(LOGO_IMG_PATH, '/upload/'), LENGTH(LOGO_IMG_PATH)) AS LOGO_IMG_URL
+					, LOGO_TEXT
+					, BG_IMG_YN
+					, SUBSTRING(BG_IMG_PATH, INSTR(BG_IMG_PATH, '/upload/'), LENGTH(BG_IMG_PATH)) AS BG_IMG_URL
+					, SUBSTRING(BG_VIDEO_PATH, INSTR(BG_VIDEO_PATH, '/upload/'), LENGTH(BG_VIDEO_PATH)) AS BG_VIDEO_URL
+					, STREAMING_SERVER_URL
+					, AUTO_SYNC_TIME
+					, FIRMWARE_VERSION
+					, FIRMWARE_MODIFY_DT
+					, SUBSTRING(BANNER1_IMG_PATH, INSTR(BANNER1_IMG_PATH, '/upload/'), LENGTH(BANNER1_IMG_PATH)) AS BANNER1_IMG_PATH
+					, SUBSTRING(BANNER2_IMG_PATH, INSTR(BANNER2_IMG_PATH, '/upload/'), LENGTH(BANNER2_IMG_PATH)) AS BANNER2_IMG_PATH
+			FROM TB_STB_CONFIGURATION
+	</select>
+</sqlMap>

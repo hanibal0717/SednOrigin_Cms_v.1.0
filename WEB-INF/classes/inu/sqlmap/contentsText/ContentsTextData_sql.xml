@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="contentsTextData">
+
+	<typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+  	<resultMap id="contentsTextDataMap" class="egovMap">
+        <result property="textIdx" column="TEXT_IDX" />
+        <result property="title" column="TITLE" />
+        <result property="atchFileId" column="ATCH_FILE_ID" />
+        <result property="cont" column="CONT" jdbcType="CLOB" javaType="java.lang.String" />
+        <result property="menu" column="MENU" />
+        <result property="hits" column="HITS" />
+        <result property="regDt" column="REG_DT" />
+        <result property="regId" column="REG_ID" />
+        <result property="regNm" column="REG_NM" />
+        <result property="regIp" column="REG_IP" />
+        <result property="modDt" column="MOD_DT" />
+        <result property="modId" column="MOD_ID" />
+        <result property="modIp" column="MOD_IP" />
+        <result property="delYn" column="DEL_YN" />
+        <result property="tag" column="TAG" />
+    </resultMap>
+	
+	<resultMap id="USER_MENU" class="egovMap">
+		<result property="MENU_SEQ" column="MENU_SEQ"/>
+		<result property="UP_MENU_SEQ" column="UP_MENU_SEQ"/>
+		<result property="MENU_LEVEL" column="MENU_LEVEL"/>
+		<result property="SYS_CODE" column="SYS_CODE"/>
+		<result property="MENU_NAME" column="MENU_NAME"/>
+		<result property="MENU_PATH" column="MENU_PATH"/>
+		<result property="MENU_TXT" column="MENU_TXT"/>
+	</resultMap>
+	
+	<resultMap id="TAG_MENU_MANAGE" class="egovMap">
+		<result property="TAG_IDX" column="TAG_IDX"/>
+		<result property="TAG_NAME" column="TAG_NAME"/>
+		<result property="TAG_ICON_URL" column="TAG_ICON_URL"/>
+		<result property="TAG_SEQ" column="TAG_SEQ"/>
+		<result property="TAG_SERVICE_YN" column="TAG_SERVICE_YN"/>
+		<result property="DEL_YN" column="DEL_YN"/>
+	</resultMap>
+	
+	<select id="contentsTextData.dataCnt" parameterClass="map" resultClass="Integer">
+			SELECT
+				COUNT(*) CNT
+			FROM TB_CONTENTS_TEXT_DATA A
+		   WHERE A.DEL_YN    = 'N'			 
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.CONT LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.TITLE LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.TITLE LIKE CONCAT('%', #search_keyword#, '%') OR A.CONT LIKE CONCAT('%', #search_keyword#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+	</select>
+	 
+
+	<select id="contentsTextData.dataList" parameterClass="map" resultMap="contentsTextDataMap">
+				SELECT A.TEXT_IDX
+					 , A.TITLE
+					 , A.ATCH_FILE_ID
+					 , A.CONT
+					 , A.MENU
+					 , A.HITS
+					 , A.REG_DT
+					 , A.REG_ID
+					 , A.REG_NM
+					 , A.REG_IP
+					 , A.MOD_DT
+					 , A.MOD_ID
+					 , A.MOD_IP
+					 , A.DEL_YN   
+					 , A.TAG
+				FROM TB_CONTENTS_TEXT_DATA A
+				WHERE A.DEL_YN = 'N'
+				 
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.CONT LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.TITLE LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.TITLE LIKE CONCAT('%', #search_keyword#, '%') OR A.CONT LIKE CONCAT('%', #search_keyword#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+				ORDER BY A.REG_DT DESC, A.TEXT_IDX DESC
+		<isNotEmpty property="firstIndex">
+			 limit #firstIndex#, #pageUnit# 
+		</isNotEmpty>
+	</select>
+	
+	<select id="contentsTextData.dataDetail" parameterClass="map" resultMap="contentsTextDataMap">
+		<![CDATA[ 
+			SELECT A.TEXT_IDX
+				 , A.TITLE
+				 , A.ATCH_FILE_ID
+				 , A.CONT
+				 , A.MENU
+				 , A.HITS
+				 , A.REG_DT
+				 , A.REG_ID
+				 , A.REG_NM
+				 , A.REG_IP
+				 , A.MOD_DT
+				 , A.MOD_ID
+				 , A.MOD_IP
+				 , A.DEL_YN
+				 , A.TAG  
+			FROM TB_CONTENTS_TEXT_DATA A
+			WHERE A.DEL_YN = 'N'
+			 AND A.TEXT_IDX = #text_idx#
+		]]>
+	</select>
+	
+	
+	<insert id="contentsTextData.registData" parameterClass="map">
+		<![CDATA[ 
+			INSERT INTO TB_CONTENTS_TEXT_DATA ( 
+				TEXT_IDX, 
+				TITLE, 
+				ATCH_FILE_ID,
+				CONT, 
+				MENU,
+				HITS, 
+				REG_DT, 
+				REG_ID, 
+				REG_NM , 
+				REG_IP, 
+				DEL_YN,
+				TAG
+			) VALUES ( 
+				#text_idx#, 
+				#title#, 
+				#atch_file_id#,
+				#cont#, 
+				#menu#,
+				0,
+				now(), 
+				#reg_id#, 
+				#reg_nm# , 
+				#reg_ip#, 
+				'N',
+				#tag#				
+			)
+		]]>
+	</insert>
+	
+	<update id="contentsTextData.modifyData" parameterClass="map">
+		UPDATE TB_CONTENTS_TEXT_DATA SET
+			  TITLE        = #title#
+			, ATCH_FILE_ID = #atch_file_id#
+			, CONT         = #cont#
+			, MOD_ID       = #mod_id#
+			, MOD_DT       = now()
+			, MOD_IP       = #mod_ip#
+			, menu		   = #menu#
+			, tag		   = #tag#
+		WHERE TEXT_IDX     = #text_idx# 
+	</update>
+	
+	
+	<update id="contentsTextData.deleteData" parameterClass="map">
+		UPDATE TB_CONTENTS_TEXT_DATA SET
+			  DEL_YN      = 'Y'
+			, MOD_ID      = #mod_id#
+			, MOD_DT      = now()
+			, MOD_IP      = #mod_ip#
+		WHERE TEXT_IDX     = #text_idx#
+	</update>
+	
+		
+	<select id="contentsTextData.getNextDataIdx" parameterClass="map" resultClass="int">
+		 SELECT CASE WHEN  max(TEXT_IDX) IS NULL THEN 1 ELSE MAX(TEXT_IDX)+1 END AS IDX FROM TB_CONTENTS_TEXT_DATA
+	</select>
+	 
+	<update id="contentsTextData.updateHits" parameterClass="map">
+		UPDATE TB_CONTENTS_TEXT_DATA 
+		       SET HITS = IFNULL(HITS, 0)+1 
+		 WHERE TEXT_IDX     = #text_idx#
+	</update>
+	
+	<select id="contentsTextData.selectMenu" parameterClass="map" resultMap="USER_MENU">
+		SELECT
+		 * 
+		FROM TB_USER_MENU 
+		WHERE 1 = 1
+			<isNotEmpty property="MENU_SEQ"> 
+			AND UP_MENU_SEQ = #MENU_SEQ# 
+			</isNotEmpty>
+		ORDER BY SYS_CODE ASC
+	</select>
+	
+	<select id="contentsTextData.attachFileList" parameterClass="map" resultClass="egovMap">
+		SELECT
+				*
+		FROM TB_ATTACH_FILE
+		WHERE DEL_YN = 'N' AND TRIM(FILE_GUBUN) = #file_gubun#
+		  AND DATA_IDX = #text_idx# 
+			
+			<isNotEmpty property="GUBUN">
+			<isEqual property="GUBUN" compareValue="C">
+				AND GUBUN = 'C'  /** C일반 */
+			</isEqual>
+			<isEqual property="GUBUN" compareValue="T">
+				AND GUBUN = 'T'	/** T 썸네일 */
+			</isEqual>
+			<isEqual property="GUBUN" compareValue="M">
+				AND GUBUN = 'M'	/** M동영상 */
+			</isEqual>
+		</isNotEmpty>
+			
+		
+	</select>
+	
+	<insert id="contentsTextData.registAttachFile" parameterClass="map">
+		<selectKey keyProperty="idx" type="pre" resultClass="String">
+			SELECT concat('BF' , LPAD( ifnull(MAX(SUBSTR(ATTACH_IDX , 3)) , 0) + 1 , 10 , '0' )) IDX 
+			FROM TB_ATTACH_FILE
+			WHERE FILE_GUBUN = #file_gubun# 
+			  AND ATTACH_IDX LIKE 'BF%'      
+		</selectKey>
+		<![CDATA[ 
+			INSERT INTO TB_ATTACH_FILE(
+				 FILE_GUBUN
+				,DATA_IDX
+				,ATTACH_IDX
+				,GUBUN
+				,ORG_FILE_NM
+				,FILE_NM
+				,FILE_PATH
+				,DOWNLOAD_CNT
+				,REG_DT
+				,DEL_YN
+			)VALUES(
+				 #file_gubun# , #data_idx# , #idx# ,#gubun#, #org_file_nm# , #file_nm#
+				,#file_path#
+				, 0
+				,now() 
+				,'N'
+			)
+		]]>
+	</insert>
+	
+	<select id="contentsTextData.selectTagMenu" parameterClass="map" resultMap="TAG_MENU_MANAGE">
+		SELECT 
+		* 
+		FROM TB_TAG_MENU_MANAGE 
+		WHERE TAG_SERVICE_YN = 'Y'
+		<isNotEmpty property="TAG_IDX">
+		AND TAG_IDX = #TAG_IDX#
+		</isNotEmpty>
+		AND DEL_YN = 'N'
+		ORDER BY TAG_SEQ ASC
+	</select>
+	
+	<delete id="contentsTextData.delTagRelCon" parameterClass="map">
+		DELETE FROM TB_TAG_MENU_CONTENTS_RELA WHERE TEXT_IDX = #text_idx#
+	</delete>
+	
+	<insert id="contentsTextData.regTagRelCon" parameterClass="map">
+		INSERT INTO TB_TAG_MENU_CONTENTS_RELA ( 
+			TAG_IDX, 
+			TEXT_IDX
+		) VALUES ( 
+			#TAG_IDX#, 
+			#TEXT_IDX#
+		)
+	</insert>
+</sqlMap>

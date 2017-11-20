@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="liveBroadManage">
+
+	<typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+	<resultMap id="liveBroadManageDataMap" class="egovMap">
+        <result property="liveIdx"     column="LIVE_IDX"     />
+        <result property="chIdx"       column="CH_IDX"       />
+        <result property="broadNm"     column="BROAD_NM"     />
+        <result property="startDate"   column="START_DATE"   />
+        <result property="startHh"     column="START_HH"     />
+        <result property="startMm"     column="START_MM"     />
+        <result property="endDate"     column="END_DATE"     />        
+        <result property="endHh"       column="END_HH"       />
+        <result property="endMm"       column="END_MM"       />
+        <result property="memberYn"    column="MEMBER_YN"    />
+        <result property="screenGubun" column="SCREEN_GUBUN" />
+        <result property="regDt"       column="REG_DT"       />
+        <result property="regIp"       column="REG_IP"       />
+        <result property="regId"       column="REG_ID"       />
+        <result property="modDt"       column="MOD_DT"       />
+        <result property="modIp"       column="MOD_IP"       />
+        <result property="modId"       column="MOD_ID"       />
+        <result property="delDt"       column="DEL_DT"       />
+        <result property="delIp"       column="DEL_IP"       />
+        <result property="delId"       column="DEL_ID"       />        
+        <result property="delYn"       column="DEL_YN"       />
+        <result property="liveUrl"     column="LIVE_URL"       />        
+    </resultMap>
+    
+   	<resultMap id="channelList" class="egovMap">
+		<result property="chIdx" column="CH_IDX"/>
+		<result property="chNm" column="CH_NM"/>
+		<result property="chGubun" column="CH_GUBUN"/>
+	</resultMap>
+	
+	<insert id="liveBroadManage.registLiveBroadManageData" parameterClass="map">
+		<selectKey keyProperty="idx" type="pre" resultClass="String">
+			SELECT ( IFNULL(MAX(LIVE_IDX), 0) + 1 ) AS IDX FROM TB_LIVE_BROAD_MANAGE
+		</selectKey>
+		<![CDATA[ 
+			INSERT INTO TB_LIVE_BROAD_MANAGE (
+				LIVE_IDX,     CH_IDX,   BROAD_NM, START_DATE, START_HH,    
+				START_MM,     END_DATE, END_HH,   END_MM,     MEMBER_YN,   
+				SCREEN_GUBUN, REG_DT,   REG_IP,   REG_ID,     DEL_YN,
+				LIVE_URL      
+			) VALUES (
+				#idx#,         #chIdx#,   #broadNm#, #startDate#, #startHh#,    
+				#startMm#,     #endDate#, #endHh#,   #endMm#,     #memberYn#,   
+				#screenGubun#, now(),     #regIp#,   #regId#,     'N',
+				#liveUrl#
+			)
+		]]>
+	</insert>
+	
+	<update id="liveBroadManage.modifyLiveBroadManageData" parameterClass="map">
+		UPDATE TB_LIVE_BROAD_MANAGE SET
+			  CH_IDX       = #chIdx#
+			, BROAD_NM     = #broadNm#
+			, START_DATE   = #startDate#
+			, START_HH     = #startHh#
+			, START_MM     = #startMm#
+			, END_DATE     = #endDate#
+			, END_HH       = #endHh#
+			, END_MM       = #endMm#
+			, MEMBER_YN    = #memberYn#
+			, SCREEN_GUBUN = #screenGubun#
+			, MOD_ID       = #modId#
+			, MOD_DT       = now()
+			, MOD_IP       = #modIp#
+			, LIVE_URL     = #liveUrl#			
+		WHERE LIVE_IDX     = #liveIdx#
+	</update>
+	
+	<select id="liveBroadManage.selectLiveBoardDataList" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT @RNUM := @RNUM + 1 AS RNUM,
+			   LIVE_IDX, 
+		       BROAD_NM, 
+		       START_DATE,
+		       START_HH,
+		       START_MM, 
+		       END_DATE, 
+		       END_HH, 
+		       END_MM,
+                CASE MEMBER_YN   
+                	WHEN 'Y' THEN '회원'  
+                	WHEN 'N' THEN '전체' 
+            	END AS MEMBER_YN,
+		       SCREEN_GUBUN,
+		       REG_DT,
+		       REG_IP,
+		       REG_ID,
+		       MOD_DT,
+		       MOD_IP,
+		       MOD_ID,
+		       DEL_DT,
+		       DEL_IP,
+		       DEL_ID,
+		       DEL_YN,
+		       CH_NM,
+               CONCAT(START_DATE, " ", START_HH, ":", START_MM) AS START_DATE_RSLT,
+               CONCAT(END_DATE, " ", END_HH, ":", END_MM) AS END_DATE_RSLT 
+		FROM TB_LIVE_BROAD_MANAGE LEFT OUTER JOIN TB_CHANNEL_INFO ON TB_LIVE_BROAD_MANAGE.CH_IDX = TB_CHANNEL_INFO.CH_IDX, ( SELECT @RNUM := 0 ) R
+		WHERE 1=1
+		<isNotEmpty property="search_keyword">
+			<isNotEmpty property="search_type">
+				AND (TB_CHANNEL_INFO.CH_IDX LIKE CONCAT('%', #search_type#, '%') AND BROAD_NM LIKE CONCAT('%', #search_keyword#, '%'))
+			</isNotEmpty>
+			<isEmpty property="search_type">
+				AND BROAD_NM LIKE CONCAT('%', #search_keyword#, '%')
+			</isEmpty>
+		</isNotEmpty>
+		
+ 		<isEmpty property="search_keyword">
+			<isNotEmpty property="search_type">
+				AND (TB_CHANNEL_INFO.CH_IDX LIKE CONCAT('%', #search_type#, '%') AND BROAD_NM LIKE CONCAT('%', '', '%'))
+			</isNotEmpty>
+			<isEmpty property="search_type">
+				AND BROAD_NM LIKE CONCAT('%', '', '%')
+			</isEmpty>
+		</isEmpty>
+		
+		ORDER BY REG_DT DESC
+		<isNotEmpty property="firstIndex">
+			 limit #firstIndex#, #pageUnit# 
+		</isNotEmpty>
+	</select>
+	
+	<select id="liveBroadManage.dataListCnt" parameterClass="java.util.HashMap" resultClass="int">
+		SELECT COUNT(*) 
+				FROM TB_LIVE_BROAD_MANAGE LEFT OUTER JOIN TB_CHANNEL_INFO ON TB_LIVE_BROAD_MANAGE.CH_IDX = TB_CHANNEL_INFO.CH_IDX, ( SELECT @RNUM := 0 ) R
+		WHERE 1=1
+		<isNotEmpty property="search_keyword">
+			<isNotEmpty property="search_type">
+				AND (TB_CHANNEL_INFO.CH_IDX LIKE CONCAT('%', #search_type#, '%') AND BROAD_NM LIKE CONCAT('%', #search_keyword#, '%'))
+			</isNotEmpty>
+			<isEmpty property="search_type">
+				AND BROAD_NM LIKE CONCAT('%', #search_keyword#, '%')
+			</isEmpty>
+		</isNotEmpty>
+		
+ 		<isEmpty property="search_keyword">
+			<isNotEmpty property="search_type">
+				AND (TB_CHANNEL_INFO.CH_IDX LIKE CONCAT('%', #search_type#, '%') AND BROAD_NM LIKE CONCAT('%', '', '%'))
+			</isNotEmpty>
+			<isEmpty property="search_type">
+				AND BROAD_NM LIKE CONCAT('%', '', '%')
+			</isEmpty>
+		</isEmpty>
+		
+		ORDER BY REG_DT DESC
+	</select>
+	
+	<select id="liveBroadManage.liveDataDetail" parameterClass="map" resultClass="egovMap">
+		SELECT TB_LIVE_BROAD_MANAGE.CH_IDX,
+			   LIVE_IDX, 
+		       BROAD_NM, 
+		       START_DATE,
+		       START_HH,
+		       START_MM, 
+		       END_DATE, 
+		       END_HH, 
+		       END_MM,
+                CASE MEMBER_YN   
+                	WHEN 'Y' THEN '회원'  
+                	WHEN 'N' THEN '전체' 
+            	END AS MEMBER_YN_STR,
+               MEMBER_YN,
+		       SCREEN_GUBUN,
+		       REG_DT,
+		       REG_IP,
+		       REG_ID,
+		       MOD_DT,
+		       MOD_IP,
+		       MOD_ID,
+		       DEL_DT,
+		       DEL_IP,
+		       DEL_ID,
+		       DEL_YN,
+		       LIVE_URL,
+		       CH_NM,
+               CONCAT(START_DATE, " ", START_HH, ":", START_MM) AS START_DATE_RSLT,
+               CONCAT(END_DATE, " ", END_HH, ":", END_MM) AS END_DATE_RSLT 
+		FROM TB_LIVE_BROAD_MANAGE LEFT OUTER JOIN TB_CHANNEL_INFO ON TB_LIVE_BROAD_MANAGE.CH_IDX = TB_CHANNEL_INFO.CH_IDX
+		WHERE TB_LIVE_BROAD_MANAGE.LIVE_IDX = #live_idx#
+	</select>
+	
+	<delete id="liveBroadManage.removeLiveBoard" parameterClass="java.util.HashMap">
+		DELETE FROM TB_LIVE_BROAD_MANAGE
+			WHERE LIVE_IDX = #liveIdx#
+	</delete>
+	
+	<select id="liveBroadManage.channelList" parameterClass="map" resultMap="channelList">
+		SELECT CH_IDX, CH_NM, CH_GUBUN  
+		FROM TB_CHANNEL_INFO 
+		ORDER BY CH_IDX ASC
+	</select>
+	
+</sqlMap>

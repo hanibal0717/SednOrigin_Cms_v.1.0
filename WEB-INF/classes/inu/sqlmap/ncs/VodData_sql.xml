@@ -1,0 +1,607 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="vodData">
+
+	<typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+  	<resultMap id="bbsDataMap" class="egovMap">
+        <result property="vodIdx" column="VOD_IDX"/>
+        <result property="vodTitle" column="VOD_TITLE"/>
+        <result property="vodCont" column="VOD_CONT"  jdbcType="CLOB" javaType="java.lang.String" />
+        <result property="vodKeyword" column="VOD_KEYWORD" />
+        <result property="vodPlayTime" column="VOD_PLAY_TIME" />
+        <result property="hits" column="HITS"  />
+        <result property="regNm" column="REG_NM"  />
+        <result property="regDt" column="REG_DT"  />
+        <result property="regId" column="REG_ID"  />
+        <result property="regIp" column="REG_IP"  />
+        <result property="modDt" column="MOD_DT"  />
+        <result property="modId" column="MOD_ID"  />
+        <result property="modIp" column="MOD_IP"  />
+        <result property="delYn" column="DEL_YN"  />
+        <result property="fileCnt" column="FILE_CNT"  />                
+        <result property="thumAttchIdx" column="THUM_ATTACH_IDX"  />
+        <result property="movAttchIdx" column="MOV_ATTACH_IDX"  />  
+        <result property="tag" column="TAG"  />
+        <result property="transcoding" column="TRANSCODING"  />
+        <result property="best" column="BEST"  />
+        <result property="new" column="NEW"  />
+        <result property="hot" column="HOT"  />
+        <result property="template" column="TEMPLATE"  />
+        <result property="menu" column="MENU"  />
+    </resultMap>
+	
+	<resultMap id="TAG_MENU_MANAGE" class="egovMap">
+		<result property="TAG_IDX" column="TAG_IDX"/>
+		<result property="TAG_NAME" column="TAG_NAME"/>
+		<result property="TAG_ICON_URL" column="TAG_ICON_URL"/>
+		<result property="TAG_SEQ" column="TAG_SEQ"/>
+		<result property="TAG_SERVICE_YN" column="TAG_SERVICE_YN"/>
+		<result property="DEL_YN" column="DEL_YN"/>
+	</resultMap>
+    
+    <resultMap id="HS_CM_CD" class="egovMap">
+    	<result property="GRP_CD" column="GRP_CD"/>
+		<result property="CM_CD" column="CM_CD"/>
+		<result property="GRP_NM" column="GRP_NM"/>
+		<result property="CM_NM" column="CM_NM"/>
+		<result property="CD_SEQ" column="CD_SEQ"/>
+		<result property="VAL1" column="VAL1"/>
+		<result property="VAL2" column="VAL2"/>
+		<result property="VAL3" column="VAL3"/>
+		<result property="ETC1" column="ETC1"/>
+		<result property="ETC2" column="ETC2"/>
+		<result property="IS_USE" column="IS_USE"/>
+		<result property="IS_DEL" column="IS_DEL"/>
+		<result property="IN_DATE" column="IN_DATE"/>
+		<result property="MO_DATE" column="MO_DATE"/>
+	</resultMap>
+
+	<resultMap id="USER_MENU" class="egovMap">
+		<result property="MENU_SEQ" column="MENU_SEQ"/>
+		<result property="UP_MENU_SEQ" column="UP_MENU_SEQ"/>
+		<result property="MENU_LEVEL" column="MENU_LEVEL"/>
+		<result property="SYS_CODE" column="SYS_CODE"/>
+		<result property="MENU_NAME" column="MENU_NAME"/>
+		<result property="MENU_PATH" column="MENU_PATH"/>
+		<result property="MENU_TXT" column="MENU_TXT"/>
+	</resultMap>
+	
+	<select id="vodData.dataCnt" parameterClass="map" resultClass="Integer">
+			SELECT
+				COUNT(*) CNT
+			FROM TB_VOD_DATA A
+		   WHERE A.DEL_YN    = 'N'			 
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.VOD_CONT LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.VOD_TITLE LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.VOD_TITLE LIKE CONCAT('%', #search_keyword#, '%') OR A.VOD_CONT LIKE CONCAT('%', #search_keyword#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+	</select>
+	 
+
+	<select id="vodData.dataList" parameterClass="map" resultMap="bbsDataMap">
+			SELECT * FROM (
+				SELECT 
+					      A.VOD_IDX
+						, A.VOD_TITLE
+						, A.VOD_CONT
+						, A.VOD_KEYWORD
+						, A.VOD_PLAY_TIME
+						, A.HITS
+						, A.REG_DT
+						, A.REG_ID
+						, A.REG_NM
+						, A.REG_IP
+						, A.MOD_DT
+						, A.MOD_ID
+						, A.MOD_IP
+						, A.DEL_YN        
+						, A.TAG
+						, A.BEST
+						, A.NEW
+						, A.HOT
+						, A.TRANSCODING
+						, A.TEMPLATE
+						, A.MENU
+						, ifnull(F.FILE_CNT,0) FILE_CNT  
+	            		, T.ATTACH_IDX AS THUM_ATTACH_IDX
+	            		, M.ATTACH_IDX AS MOV_ATTACH_IDX
+				FROM TB_VOD_DATA A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.VOD_IDX
+           			                     
+			         LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# AND GUBUN = 'T'
+                            		   GROUP BY DATA_IDX) T ON T.DATA_IDX = A.VOD_IDX                     
+                     
+                     LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# AND GUBUN = 'M'
+                            		   GROUP BY DATA_IDX) M ON M.DATA_IDX = A.VOD_IDX
+                            		           
+				WHERE A.DEL_YN    = 'N' AND A.VOD_TITLE IS NOT NULL
+				 
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.VOD_CONT LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.VOD_TITLE LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.VOD_TITLE LIKE CONCAT('%', #search_keyword#, '%') OR A.VOD_CONT LIKE CONCAT('%', #search_keyword#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+		<isNotEmpty property="tag_select_value">
+			AND A.TAG LIKE CONCAT('%,', #tag_select_value# , ',%')
+		</isNotEmpty>
+		
+		<isNotEmpty property="hot_select">
+			AND A.HOT = #hot_select#
+		</isNotEmpty>
+		
+		<isNotEmpty property="best_select">
+			AND A.BEST = #best_select#
+		</isNotEmpty>
+		
+		<![CDATA[   
+			) A			
+		]]>
+		ORDER BY A.REG_DT DESC, A.VOD_IDX DESC 
+		<isNotEmpty property="firstIndex">
+			 limit #firstIndex#, #pageUnit# 
+		</isNotEmpty>
+	</select>
+	
+	<select id="vodData.dataListCnt" parameterClass="java.util.HashMap" resultClass="int">
+			SELECT COUNT(*) FROM (
+				SELECT 
+					      A.VOD_IDX
+						, A.VOD_TITLE
+						, A.VOD_CONT
+						, A.VOD_KEYWORD
+						, A.VOD_PLAY_TIME
+						, A.HITS
+						, A.REG_DT
+						, A.REG_ID
+						, A.REG_NM
+						, A.REG_IP
+						, A.MOD_DT
+						, A.MOD_ID
+						, A.MOD_IP
+						, A.DEL_YN        
+						, A.TAG
+						, A.BEST
+						, A.NEW
+						, A.HOT
+						, A.TRANSCODING
+						, A.TEMPLATE
+						, A.MENU
+						, ifnull(F.FILE_CNT,0) FILE_CNT  
+	            		, T.ATTACH_IDX AS THUM_ATTACH_IDX
+	            		, M.ATTACH_IDX AS MOV_ATTACH_IDX
+				FROM TB_VOD_DATA A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.VOD_IDX
+           			                     
+			         LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# AND GUBUN = 'T'
+                            		   GROUP BY DATA_IDX) T ON T.DATA_IDX = A.VOD_IDX                     
+                     
+                     LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# AND GUBUN = 'M'
+                            		   GROUP BY DATA_IDX) M ON M.DATA_IDX = A.VOD_IDX
+                            		           
+				WHERE A.DEL_YN    = 'N'
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.VOD_CONT LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.VOD_TITLE LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.VOD_TITLE LIKE CONCAT('%', #search_keyword#, '%') OR A.VOD_CONT LIKE CONCAT('%', #search_keyword#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+		<isNotEmpty property="tag_select_value">
+			AND A.TAG LIKE CONCAT('%,', #tag_select_value# , ',%')
+		</isNotEmpty>
+		
+		<isNotEmpty property="hot_select">
+			AND A.HOT = #hot_select#
+		</isNotEmpty>
+		
+		<isNotEmpty property="best_select">
+			AND A.BEST = #best_select#
+		</isNotEmpty>
+		
+		<![CDATA[   
+			) A			
+		]]>
+		ORDER BY A.REG_DT DESC, A.VOD_IDX DESC
+	</select>
+	
+	<select id="vodData.dataDetail" parameterClass="map" resultMap="bbsDataMap">
+		<![CDATA[ 
+			SELECT 
+					      A.VOD_IDX
+						, A.VOD_TITLE
+						, A.VOD_CONT
+						, A.VOD_KEYWORD
+						, A.VOD_PLAY_TIME
+						, A.HITS
+						, A.REG_DT
+						, A.REG_ID
+						, A.REG_NM
+						, A.REG_IP
+						, A.MOD_DT
+						, A.MOD_ID
+						, A.MOD_IP
+						, A.DEL_YN        
+						, A.TAG
+						, A.BEST
+						, A.NEW
+						, A.HOT
+						, A.TRANSCODING
+						, A.TEMPLATE
+						, A.MENU
+						, ifnull(F.FILE_CNT,0) FILE_CNT  
+	            		, T.ATTACH_IDX AS THUM_ATTACH_IDX
+	            		, M.ATTACH_IDX AS MOV_ATTACH_IDX
+				FROM TB_VOD_DATA A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.VOD_IDX
+           			                     
+			         LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# AND GUBUN = 'T'
+                            		   GROUP BY DATA_IDX) T ON T.DATA_IDX = A.VOD_IDX                     
+                     
+                     LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# AND GUBUN = 'M'
+                            		   GROUP BY DATA_IDX) M ON M.DATA_IDX = A.VOD_IDX                            		           
+				WHERE A.DEL_YN = 'N'
+				 AND A.VOD_IDX = #vod_idx#
+		]]>
+	</select>
+	
+	
+	<insert id="vodData.registData" parameterClass="map">
+		<![CDATA[ 
+			INSERT INTO TB_VOD_DATA ( 
+				VOD_IDX, 
+				VOD_TITLE, 
+				VOD_CONT, 
+				VOD_KEYWORD, 
+				VOD_PLAY_TIME , 
+				HITS, 
+				ATCH_FILE_ID, 
+				REG_DT, 
+				REG_ID, 
+				REG_NM , 
+				REG_IP, 
+				DEL_YN,
+				TAG,
+				TRANSCODING,
+				BEST,
+				NEW,
+				HOT,
+				TEMPLATE,
+				MENU
+			) VALUES ( 
+				#vod_idx#, 
+				#vod_title#, 
+				#vod_cont#, 
+				#vod_keyword#, 
+				#vod_play_time# , 
+				0, 
+				#atch_file_id#, 
+				#startDate#,
+				#reg_id#, 
+				#reg_nm# , 
+				#reg_ip#, 
+				'N',
+				#tag#,
+				#transcoding#,
+				#best#,
+				#new#,
+				#hot#,
+				#template#,
+				#menu#
+			)
+		]]>
+	</insert>
+	
+	<update id="vodData.modifyData" parameterClass="map">
+		UPDATE TB_VOD_DATA SET
+			  VOD_TITLE         = #vod_title#
+			, VOD_CONT          = #vod_cont#
+			, VOD_KEYWORD       = #vod_keyword#
+			, VOD_PLAY_TIME     = #vod_play_time#			
+			, REG_NM            = #reg_nm#
+			, MOD_ID            = #mod_id#
+			, MOD_DT            = now()
+			, MOD_IP            = #mod_ip#
+			, TAG               = #tag#
+			, TRANSCODING       = #transcoding#	
+			, BEST              = #best#
+			, NEW               = #new#
+			, HOT               = #hot#
+			, TEMPLATE			= #template#
+			, menu			= #menu#
+			, REG_DT				= #startDate#
+		WHERE VOD_IDX           = #vod_idx# 
+	</update>
+	
+	
+	<update id="vodData.deleteData" parameterClass="map">
+		UPDATE TB_VOD_DATA SET
+			  DEL_YN      = 'Y'
+			, MOD_ID      = #mod_id#
+			, MOD_DT      = now()
+			, MOD_IP      = #mod_ip#
+		WHERE VOD_IDX     = #vod_idx#
+	</update>
+	
+		
+	<select id="vodData.getNextDataIdx" parameterClass="map" resultClass="int">
+		 SELECT CASE WHEN  max(VOD_IDX) IS NULL THEN 1 ELSE MAX(VOD_IDX)+1 END AS IDX FROM TB_VOD_DATA
+	</select>
+	 
+	<update id="vodData.updateHits" parameterClass="map">
+		UPDATE TB_VOD_DATA 
+		       SET HITS = HITS+1 
+		 WHERE VOD_IDX     = #vod_idx#
+	</update>
+
+	<insert id="vodData.registAttachFile" parameterClass="map">
+		<selectKey keyProperty="idx" type="pre" resultClass="String">
+			SELECT concat('BF' , LPAD( ifnull(MAX(SUBSTR(ATTACH_IDX , 3)) , 0) + 1 , 10 , '0' )) IDX 
+			FROM TB_ATTACH_FILE
+			WHERE FILE_GUBUN = #file_gubun# 
+			  AND ATTACH_IDX LIKE 'BF%'      
+		</selectKey>
+		<![CDATA[ 
+			INSERT INTO TB_ATTACH_FILE(
+				 FILE_GUBUN
+				,DATA_IDX
+				,ATTACH_IDX
+				,GUBUN
+				,ORG_FILE_NM
+				,FILE_NM
+				,FILE_PATH
+				,DOWNLOAD_CNT
+				,REG_DT
+				,DEL_YN
+			)VALUES(
+				 #file_gubun# , #data_idx# , #idx# ,#gubun#, #org_file_nm# , #file_nm#
+				,#file_path#
+				, 0
+				,now() 
+				,'N'
+			)
+		]]>
+	</insert>
+
+	<select id="vodData.attachFileList" parameterClass="map" resultClass="egovMap">
+		SELECT
+			*
+			,SUBSTRING(FILE_PATH, INSTR(FILE_PATH, '/upload/'), LENGTH(FILE_PATH)) AS FILE_URL
+		FROM TB_ATTACH_FILE
+		WHERE DEL_YN = 'N' AND TRIM(FILE_GUBUN) = #file_gubun#
+		  AND DATA_IDX = #vod_idx# 
+		  
+		<isNotEmpty property="GUBUN">
+			<isEqual property="GUBUN" compareValue="C">
+				AND GUBUN = 'C'  /** C일반 */
+			</isEqual>
+			<isEqual property="GUBUN" compareValue="T">
+				AND GUBUN = 'T'	/** T 썸네일 */
+			</isEqual>
+			<isEqual property="GUBUN" compareValue="M">
+				AND GUBUN = 'M'	/** M동영상 */
+			</isEqual>
+		</isNotEmpty>
+
+	</select>
+	
+	
+	<select id="vodData.attachFileDetail" parameterClass="map" resultClass="egovMap">
+		SELECT
+			     FILE_GUBUN
+				,DATA_IDX
+				,TRIM(ATTACH_IDX)  as ATTACH_IDX
+				,GUBUN				
+				,ORG_FILE_NM
+				,FILE_NM
+				,FILE_PATH
+				,DOWNLOAD_CNT
+				,DEL_YN
+				,DEL_DT
+				,SUBSTRING(FILE_PATH, INSTR(FILE_PATH, '/upload/'), LENGTH(FILE_PATH)) AS FILE_URL
+		FROM TB_ATTACH_FILE
+		WHERE DEL_YN = 'N' 
+			<isNotEmpty property="file_gubun">
+				AND TRIM(FILE_GUBUN) = #file_gubun#
+				<isNotEqual property="file_gubun" compareValue="CONTENTS_TEXT">
+					AND MAIN_IMG_FALG = 'Y'
+				</isNotEqual>
+			</isNotEmpty>
+			<isEmpty property="file_gubun">
+				AND TRIM(FILE_GUBUN) = 'VOD_IMG'
+			</isEmpty>
+			AND DATA_IDX = #data_idx#
+			
+	</select>
+	
+	<select id="vodData.attachFileDetailBn" parameterClass="map" resultClass="egovMap">
+		SELECT
+			     FILE_GUBUN
+				,DATA_IDX
+				,TRIM(ATTACH_IDX)  as ATTACH_IDX
+				,GUBUN				
+				,ORG_FILE_NM
+				,FILE_NM
+				,FILE_PATH
+				,DOWNLOAD_CNT
+				,DEL_YN
+				,DEL_DT
+		FROM TB_ATTACH_FILE
+		WHERE DEL_YN = 'N' 
+			<isNotEmpty property="file_gubun">
+				AND TRIM(FILE_GUBUN) = #file_gubun#
+			</isNotEmpty>
+			<isEmpty property="file_gubun">
+				AND TRIM(FILE_GUBUN) = 'VOD_IMG'
+			</isEmpty>
+			AND DATA_IDX = #data_idx#
+<!-- 			AND MAIN_IMG_FALG = 'Y' -->
+	</select>
+	 	 
+	 	
+	<select id="vodData.attachFileDetailByKind" parameterClass="map" resultClass="egovMap">
+		SELECT
+			     FILE_GUBUN
+				,DATA_IDX
+				,TRIM(ATTACH_IDX)  as ATTACH_IDX
+				,GUBUN				
+				,ORG_FILE_NM
+				,FILE_NM
+				,FILE_PATH
+				,DOWNLOAD_CNT
+				,DEL_YN
+				,DEL_DT
+		FROM TB_ATTACH_FILE
+		WHERE DEL_YN = 'N' AND TRIM(FILE_GUBUN) = #file_gubun#
+		AND DATA_IDX = #vod_idx#
+		AND GUBUN = #gubun#
+	</select>
+	 
+	 
+	
+	<update id="vodData.deleteAttachFile" parameterClass="map">
+		UPDATE TB_ATTACH_FILE SET 
+			  DEL_YN = 'Y'
+			, DEL_DT = now()
+		WHERE TRIM(FILE_GUBUN) = #file_gubun#
+		  AND DATA_IDX         = #vod_idx#
+		  AND trim(ATTACH_IDX) = #attach_idx#
+	</update>
+	
+	<select id="vodData.selectTagMenu" parameterClass="map" resultMap="TAG_MENU_MANAGE">
+		SELECT 
+		* 
+		FROM TB_TAG_MENU_MANAGE 
+		WHERE TAG_SERVICE_YN = 'Y'
+		<isNotEmpty property="TAG_IDX">
+		AND TAG_IDX = #TAG_IDX#
+		</isNotEmpty>
+		AND DEL_YN = 'N'
+		ORDER BY TAG_SEQ ASC
+	</select>
+	
+	<select id="vodData.selectCode" parameterClass="map" resultMap="HS_CM_CD">
+		SELECT * FROM HS_CM_CD WHERE GRP_CD = #GRP_CD# AND IS_USE = 'Y' AND IS_DEL = 'N' ORDER BY CD_SEQ ASC
+	</select> 
+	
+	<select id="vodData.selectRelVod" parameterClass="map" resultMap="bbsDataMap">
+		SELECT 
+			      A.VOD_IDX
+				, A.VOD_TITLE
+				, A.VOD_CONT
+				, A.VOD_KEYWORD
+				, A.VOD_PLAY_TIME
+				, A.HITS
+				, A.REG_DT
+				, A.REG_ID
+				, A.REG_NM
+				, A.REG_IP
+				, A.MOD_DT
+				, A.MOD_ID
+				, A.MOD_IP
+				, A.DEL_YN        
+				, A.TAG
+				, A.BEST
+				, A.NEW
+				, A.HOT
+				, A.TRANSCODING
+				, A.TEMPLATE
+				, A.MENU
+				, ifnull(F.FILE_CNT,0) FILE_CNT  
+		        , T.ATTACH_IDX AS THUM_ATTACH_IDX
+		        , M.ATTACH_IDX AS MOV_ATTACH_IDX
+		FROM TB_VOD_DATA A
+			 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+		                        			FROM TB_ATTACH_FILE WHERE DEL_YN='N' AND FILE_GUBUN IN('VOD_IMG', 'VOD') 
+		                        			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.VOD_IDX
+		       			                     
+		     LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+		                        			FROM TB_ATTACH_FILE 
+		                        			WHERE DEL_YN='N' AND FILE_GUBUN = 'VOD_IMG' AND GUBUN = 'T'
+		                        		   GROUP BY DATA_IDX) T ON T.DATA_IDX = A.VOD_IDX                     
+		                 
+		     LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+		                        			FROM TB_ATTACH_FILE 
+		                        			WHERE DEL_YN='N' AND FILE_GUBUN = 'VOD' AND GUBUN = 'M'
+		                        		   GROUP BY DATA_IDX) M ON M.DATA_IDX = A.VOD_IDX
+		     , TB_REL_VOD_DATA R
+		WHERE A.DEL_YN = 'N'
+			AND A.VOD_IDX = R.REL_VOD_IDX  
+			AND R.VOD_IDX = #vod_idx# 
+	</select> 
+	
+	<delete id="vodData.delRelVod" parameterClass="map">
+		DELETE FROM TB_REL_VOD_DATA WHERE VOD_IDX = #vod_idx#
+	</delete>
+	
+	<insert id="vodData.regRelVod" parameterClass="map">
+		INSERT INTO TB_REL_VOD_DATA ( 
+			VOD_IDX, 
+			REL_VOD_IDX
+		) VALUES ( 
+			#VOD_IDX#, 
+			#REL_VOD_IDX#
+		)
+	</insert>
+	
+	<select id="vodData.selectMenu" parameterClass="map" resultMap="USER_MENU">
+		SELECT
+		 * 
+		FROM TB_USER_MENU 
+		WHERE 1 = 1
+			<isNotEmpty property="MENU_SEQ"> 
+			AND UP_MENU_SEQ = #MENU_SEQ# 
+			</isNotEmpty>
+		ORDER BY SYS_CODE ASC
+	</select>
+	
+	<delete id="vodData.delTagRelVod" parameterClass="map">
+		DELETE FROM TB_TAG_MENU_VOD_RELA WHERE VOD_IDX = #vod_idx#
+	</delete>
+	
+	<insert id="vodData.regTagRelVod" parameterClass="map">
+		INSERT INTO TB_TAG_MENU_VOD_RELA ( 
+			TAG_IDX, 
+			VOD_IDX
+		) VALUES ( 
+			#TAG_IDX#, 
+			#VOD_IDX#
+		)
+	</insert>
+</sqlMap>

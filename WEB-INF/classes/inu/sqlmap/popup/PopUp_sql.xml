@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="popup">
+
+	<typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+	 
+	<select id="popup.selectList" parameterClass="map" resultClass="egovMap">
+		SELECT 
+			* 
+		FROM TB_POPUP 
+		WHERE P_DEL_YN = 'N'
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND P_CONT LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND P_TITLE LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (P_TITLE LIKE CONCAT('%', #search_keyword#, '%') OR P_CONT LIKE CONCAT('%', #search_keyword#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+		ORDER BY P_REG_DATE DESC
+		<isNotEmpty property="firstIndex">
+			 limit #firstIndex#, #pageUnit# 
+		</isNotEmpty>
+	</select>
+	
+	<select id="popup.popupListCnt" parameterClass="java.util.HashMap" resultClass="int">
+		SELECT 
+			COUNT(*) 
+		FROM TB_POPUP 
+		WHERE P_DEL_YN = 'N'
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND P_CONT LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND P_TITLE LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (P_TITLE LIKE CONCAT('%', #search_keyword#, '%') OR P_CONT LIKE CONCAT('%', #search_keyword#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+		ORDER BY P_REG_DATE DESC
+	</select>
+	
+	<select id="popup.select" parameterClass="map" resultClass="egovMap">
+		SELECT * FROM TB_POPUP WHERE P_SEQ = #P_SEQ#
+	</select>
+	
+	<insert id="popup.insert" parameterClass="map">
+		INSERT INTO TB_POPUP
+    	(
+	        P_TITLE
+	        ,P_CONT
+	        ,P_START_DATE
+	        ,P_START_HH
+	        ,P_START_MM
+	        ,P_END_DATE
+	        ,P_END_HH
+	        ,P_END_MM
+	        ,P_LINK_URL
+	        ,P_USE_YN
+	        ,P_REG_DATE
+	        ,P_REG_ID
+	        ,P_REG_IP
+	        ,P_X
+	        ,P_Y
+	        ,P_DEL_YN
+	    ) VALUES (
+	        #P_TITLE#
+	        ,#P_CONT#
+	        ,#P_START_DATE#
+	        ,#P_START_HH#
+	        ,#P_START_MM#
+	        ,#P_END_DATE#
+	        ,#P_END_HH#
+	        ,#P_END_MM#
+	        ,#P_LINK_URL#
+	        ,#P_USE_YN#
+	        ,NOW()
+	        ,#P_REG_ID#
+	        ,#P_REG_IP#
+	        ,#P_X#
+	        ,#P_Y#
+	        ,'N'
+	    )
+	    <selectKey keyProperty="P_SEQ" resultClass="int">
+            SELECT @@IDENTITY AS P_SEQ
+        </selectKey>
+	</insert>
+	
+	<update id="popup.update" parameterClass="map">
+		UPDATE TB_POPUP SET
+		    P_TITLE = #P_TITLE#
+		    ,P_CONT = #P_CONT#
+		    ,P_START_DATE = #P_START_DATE#
+		    ,P_START_HH = #P_START_HH#
+		    ,P_START_MM = #P_START_MM#
+		    ,P_END_DATE = #P_END_DATE#
+		    ,P_END_HH = #P_END_HH#
+		    ,P_END_MM = #P_END_MM#
+		    ,P_LINK_URL = #P_LINK_URL#
+		    ,P_USE_YN = #P_USE_YN#
+		    ,P_MOD_DATE = NOW()
+		    ,P_MOD_ID = #P_MOD_ID#
+		    ,P_MOD_IP = #P_MOD_IP#
+		    ,P_X = #P_X#
+		    ,P_Y = #P_Y#
+		WHERE
+		    P_SEQ = #P_SEQ#
+	</update>
+
+	<update id="popup.delete" parameterClass="map">
+		UPDATE TB_POPUP SET
+			P_DEL_YN = 'Y'
+			,P_DEL_ID = #P_DEL_ID#
+			,P_DEL_DATE = NOW()
+			,P_DEL_IP = #P_DEL_IP#
+		WHERE P_SEQ = #P_SEQ#
+	</update>
+	
+</sqlMap>

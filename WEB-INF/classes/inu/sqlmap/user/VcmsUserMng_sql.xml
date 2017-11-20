@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="vcmsUserMng">
+
+	<select id="vcmsUserMng.selectUserList" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT @RNUM := @RNUM + 1 AS RNUM,
+		       USER_IDX, 
+		       USER_ID, 
+		       USER_NM, 
+		       POSITION,
+		       DEPARTMENT,
+		       USER_EMAIL, 
+		       USER_TEL, 
+		       REG_DT, 
+		       USER_STATUS,
+		       (SELECT COUNT(*) FROM TB_USER) AS CNT
+		FROM TB_USER, ( SELECT @RNUM := 0 ) R
+		WHERE 1=1
+		<isNotEmpty property="searchTxt">
+			<isEqual property="searchCondition" compareValue="1">
+				AND USER_ID LIKE "%$searchTxt$%"
+			</isEqual>
+			<isEqual property="searchCondition" compareValue="2">
+				AND USER_NM LIKE "%$searchTxt$%"
+			</isEqual>
+			<isEmpty property="searchCondition">
+				AND (USER_NM LIKE CONCAT('%', #searchTxt#, '%') OR USER_ID LIKE CONCAT('%', #searchTxt#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+		ORDER BY REG_DT DESC
+		<isNotEmpty property="firstIndex">
+			 limit #firstIndex#, #pageUnit# 
+		</isNotEmpty>
+	</select>
+	
+	<select id="vcmsUserMng.selectUserDetail" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT USER_IDX,
+		       USER_ID, 
+		       USER_NM, 
+		       POSITION,
+		       DEPARTMENT, 
+		       USER_EMAIL, 
+		       USER_TEL, 
+		       REG_DT, 
+		       USER_STATUS,
+		       ACCEPT_ID,
+		       ACCEPT_DT,
+		       DEL_YN
+		FROM TB_USER
+		WHERE USER_IDX = #userIdx#
+	</select>
+	
+	<update id="vcmsUserMng.updateUserInfo" parameterClass="map">
+		UPDATE TB_USER SET
+				  USER_NM       = #userNm#
+				, DEPARTMENT    = #department#
+				, POSITION      = #position#
+				, USER_EMAIL    = #userEmail#
+				, USER_TEL      = #userTel#
+				, USER_STATUS   = #userStatus#
+				<isEqual property="userStatus" compareValue="Y">
+				, ACCEPT_IP     = #mngIp#
+				, ACCEPT_DT     = sysdate()
+				, ACCEPT_ID     = #mngId#
+				</isEqual>
+				<isEqual property="userStatus" compareValue="N">
+				, ACCEPT_IP     = null
+				, ACCEPT_DT     = null
+				, ACCEPT_ID     = null
+				</isEqual>
+				, DEL_YN 		= #delYn#
+			WHERE USER_IDX      = #userIdx#
+			  AND USER_ID       = #userId#
+	</update>		
+	
+	<select id="vcmsUserMng.userIdChk" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT 
+			IFNULL((SELECT
+					COUNT(1)
+				FROM TB_USER
+				WHERE USER_ID = #userId#
+				), '0') AS CHK_RESULT
+		FROM DUAL
+	</select>
+	
+	<select id="vcmsUserMng.selectEmailList" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT h.CM_CD, h.CM_NM 
+		FROM HS_CM_CD h
+		WHERE h.GRP_CD = 130
+		ORDER BY h.CD_SEQ
+	</select>
+	
+	<update id="vcmsUserMng.userPasswordReset" parameterClass="map">
+		UPDATE TB_USER SET
+				  USER_PW  = #password#
+			WHERE USER_IDX = #userIdx#
+			  AND USER_ID  = #userId#
+	</update>
+	
+	<select id="vcmsUserMng.userListCnt" parameterClass="java.util.HashMap" resultClass="int">
+		SELECT COUNT(*) FROM TB_USER
+		WHERE 1=1
+		<isNotEmpty property="searchTxt">
+			<isEqual property="searchCondition" compareValue="1">
+				AND USER_ID LIKE "%$searchTxt$%"
+			</isEqual>
+			<isEqual property="searchCondition" compareValue="2">
+				AND USER_NM LIKE "%$searchTxt$%"
+			</isEqual>
+			<isEmpty property="searchCondition">
+				AND (USER_NM LIKE CONCAT('%', #searchTxt#, '%') OR USER_ID LIKE CONCAT('%', #searchTxt#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+	</select>
+</sqlMap>

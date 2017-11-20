@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="iBuilderManage">
+
+	<typeAlias alias="egovMap"
+		type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+
+	<select id="iBuilderManageDAO.loginMngInfo" parameterClass="map"
+		resultClass="egovMap">
+		<![CDATA[ 
+			SELECT
+				  MANAGE_ID ,MANAGE_PWD ,MANAGE_NM ,MANAGE_EMAIL, MANAGE_LEVEL, MANAGE_TEL_NUM
+			 FROM TB_MANAGE
+			WHERE MANAGE_ID  = #id#
+			  AND MANAGE_PWD = #pwd#
+		]]>
+	</select>
+
+	<select id="iBuilderManageDAO.mngAuthList" parameterClass="map"
+		resultClass="egovMap">
+		SELECT
+		A.MANAGE_ID ,MANAGE_PWD ,MANAGE_NM ,MANAGE_EMAIL , ROLE_NM, MANAGE_LEVEL,
+		MANAGE_TEL_NUM
+		FROM TB_MANAGE A
+		JOIN TB_MANAGE_ROLE B ON A.MANAGE_ID = B.MANAGE_ID
+		JOIN TB_AUTH_ROLE C ON B.ROLE_ID = C.ROLE_ID
+		WHERE A.MANAGE_ID = #id#
+	</select>
+
+	<select id="iBuilderManageDAO.manageList" parameterClass="map"
+		resultClass="egovMap">
+		SELECT ROW_NUMBER() OVER ( ORDER BY MANAGE_ID ) rnum,
+		MANAGE_ID,
+		MANAGE_PWD,
+		MANAGE_NM,
+		MANAGE_EMAIL,
+		CASE MANAGE_LEVEL WHEN 'CDMLV0010001' THEN '종합관리자' ELSE '일반관리자' END AS
+		MANAGE_LEVEL,
+		MANAGE_TEL_NUM,
+		MGR_SITE_NUM,
+		EPKI_DN,
+		LOGIN_METHOD,
+		IP_LIMIT_YN,
+		MANAGE_NOTE,
+		USE_YN,
+		TO_CHAR(REG_DT, 'YYYY-MM-DD') AS REG_DT,
+		REG_ADMIN_ID,
+		REG_IP,
+		MOD_DT,
+		MOD_ADMIN_ID,
+		MOD_IP,
+		DEL_YN
+		FROM TB_MANAGE
+		WHERE DEL_YN = 'N'
+		ORDER BY MANAGE_ID DESC
+	</select>
+
+	<select id="iBuilderManageDAO.manageDetail" parameterClass="map"
+		resultClass="egovMap">
+		SELECT MANAGE_ID,
+		MANAGE_PWD,
+		MANAGE_NM,
+		MANAGE_EMAIL,
+		MANAGE_LEVEL,
+		MANAGE_TEL_NUM,
+		MGR_SITE_NUM,
+		EPKI_DN,
+		LOGIN_METHOD,
+		IP_LIMIT_YN,
+		MANAGE_NOTE,
+		USE_YN,
+		REG_DT,
+		REG_ADMIN_ID,
+		REG_IP,
+		MOD_DT,
+		MOD_ADMIN_ID,
+		MOD_IP,
+		DEL_YN
+		FROM TB_MANAGE
+		WHERE MANAGE_ID = #manageId#
+	</select>
+
+	<insert id="iBuilderManageDAO.registManage" parameterClass="map">
+		INSERT INTO TB_MANAGE (
+		MANAGE_ID,
+		MANAGE_PWD,
+		MANAGE_NM,
+		MANAGE_EMAIL,
+		MANAGE_LEVEL,
+		MANAGE_TEL_NUM,
+		LOGIN_METHOD,
+		IP_LIMIT_YN,
+		USE_YN,
+		REG_DT,
+		REG_ADMIN_ID,
+		REG_IP,
+		DEL_YN
+		)VALUES(
+		#manage_id#,
+		#manage_pwd#,
+		#manage_nm#,
+		#manage_email#,
+		#manage_level#,
+		#manage_tel_num#,
+		#login_method#,
+		#ip_limit_yn#,
+		#use_yn#,
+		SYSDATE,
+		#reg_admin_id#,
+		#reg_ip#,
+		'N'
+		)
+	</insert>
+
+
+	<update id="iBuilderManageDAO.modifyManage" parameterClass="map">
+		UPDATE TB_MANAGE SET
+		MANAGE_ID = #manage_id#
+		,MANAGE_PWD = #manage_pwd#
+		,MANAGE_NM = #manage_nm#
+		<isNotEmpty property="manage_email">
+			,MANAGE_EMAIL = #manage_email#
+		</isNotEmpty>
+		,MANAGE_LEVEL = #manage_level#
+		<isNotEmpty property="manage_tel_num">
+			,MANAGE_TEL_NUM = #manage_tel_num#
+		</isNotEmpty>
+		,LOGIN_METHOD = #login_method#
+		,IP_LIMIT_YN = #ip_limit_yn#
+		,USE_YN = #use_yn#
+		,MOD_DT = SYSDATE
+		,MOD_ADMIN_ID = #mod_admin_id#
+		,MOD_IP = #mod_ip#
+		,DEL_YN = 'N'
+		WHERE MANAGE_ID = #manage_id#
+	</update>
+
+	<update id="iBuilderManageDAO.deleteManage" parameterClass="map">
+		UPDATE TB_MANAGE SET
+		DEL_YN = 'Y'
+		,MOD_DT = SYSDATE
+		,MOD_ADMIN_ID = #mod_admin_id#
+		,MOD_IP = #mod_ip#
+		WHERE MANAGE_ID = #manage_id#
+	</update>
+
+	<select id="iBuilderManageDAO.Duplicate" parameterClass="map"
+		resultClass="egovMap">
+		SELECT COUNT(*) AS duplicate FROM TB_MANAGE WHERE MANAGE_ID = #manage_id#
+	</select>
+
+</sqlMap>            

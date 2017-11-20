@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="banner">
+
+	<typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+	
+	<resultMap id="bbsDataMap" class="egovMap">
+        <result property="bnIdx" column="BN_IDX" />
+        <result property="bnGubun" column="BN_GUBUN" />
+        <result property="bnSeq" column="BN_SEQ" />
+        <result property="title" column="TITLE" />
+        <result property="cont" column="CONT"  jdbcType="CLOB" javaType="java.lang.String" />
+        <result property="startDate" column="START_DATE" />
+        <result property="startHh" column="START_HH" />
+        <result property="startMm" column="START_MM" />
+        <result property="endDate" column="END_DATE" />
+        <result property="endHh" column="END_HH" />
+        <result property="endMm" column="END_MM" />
+        <result property="linkUrl" column="LINK_URL" />
+        <result property="useYn" column="USE_YN"  />
+        <result property="regDate" column="REG_DATE"  />
+        <result property="regId" column="REG_ID"  />
+        <result property="regIp" column="REG_IP"  />
+        <result property="modDate" column="MOD_DATE"  />
+        <result property="modId" column="MOD_ID"  />
+        <result property="modIp" column="MOD_IP"  />
+        <result property="delYn" column="DEL_YN"  />
+        <result property="fileCnt" column="FILE_CNT"  />                
+        <result property="AttchIdx" column="ATTACH_IDX"  />
+ 
+    </resultMap>
+
+	<select id="banner.getNextBnIdx" parameterClass="map" resultClass="integer">
+		 SELECT ifnull(MAX(BN_IDX) , 0) + 1 BN_IDX FROM TB_BANNER_INFO
+	</select>
+	
+	<select id="banner.dataCnt" parameterClass="map" resultClass="Integer">
+			SELECT
+				COUNT(*) CNT
+			FROM TB_BANNER_INFO A
+		   WHERE A.DEL_YN    = 'N'			 
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.CONT LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.TITLE LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.TITLE LIKE CONCAT('%', #search_keyword#, '%') OR A.CONT LIKE CONCAT('%', #search_keyword#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+	</select>
+	
+	<select id="banner.slidingBannerList" parameterClass="map" resultClass="egovMap">
+			SELECT * FROM (
+				SELECT 
+						  A.BN_IDX
+						, A.BN_GUBUN  
+						, A.TITLE
+						, A.CONT
+						, A.START_DATE
+						, A.START_HH
+						, A.START_MM
+						, A.END_DATE
+						, A.END_HH
+						, A.END_MM
+						, A.REG_DATE
+						, A.USE_YN
+
+						, ifnull(F.FILE_CNT,0) FILE_CNT  
+	            		, T.ATTACH_IDX AS ATTACH_IDX
+
+				FROM TB_BANNER_INFO A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.BN_IDX
+           			                     
+			         LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# AND GUBUN = 'C'
+                            		   GROUP BY DATA_IDX) T ON T.DATA_IDX = A.BN_IDX                     
+                            		           
+				WHERE A.DEL_YN    = 'N' AND A.BN_GUBUN = #bnGubun#
+				 
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.CONT LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.TITLE LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.TITLE LIKE CONCAT('%', #search_keyword#, '%') OR A.CONT LIKE CONCAT('%', #search_keyword#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+		<![CDATA[   
+			) A			
+		]]>
+		ORDER BY A.REG_DATE DESC 
+		<isNotEmpty property="firstIndex">
+			 limit #firstIndex#, #pageUnit# 
+		</isNotEmpty> 
+	</select>
+	
+	<select id="banner.slidingBannerListCnt" parameterClass="java.util.HashMap" resultClass="int">
+			SELECT COUNT(*) FROM (
+				SELECT 
+						  A.BN_IDX
+						, A.BN_GUBUN  
+						, A.TITLE
+						, A.CONT
+						, A.START_DATE
+						, A.START_HH
+						, A.START_MM
+						, A.END_DATE
+						, A.END_HH
+						, A.END_MM
+						, A.REG_DATE
+						, A.USE_YN
+
+						, ifnull(F.FILE_CNT,0) FILE_CNT  
+	            		, T.ATTACH_IDX AS ATTACH_IDX
+
+				FROM TB_BANNER_INFO A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.BN_IDX
+           			                     
+			         LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# AND GUBUN = 'C'
+                            		   GROUP BY DATA_IDX) T ON T.DATA_IDX = A.BN_IDX                     
+                            		           
+				WHERE A.DEL_YN    = 'N' AND A.BN_GUBUN = #bnGubun#
+				 
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.CONT LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.TITLE LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.TITLE LIKE CONCAT('%', #search_keyword#, '%') OR A.CONT LIKE CONCAT('%', #search_keyword#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+		<![CDATA[   
+			) A			
+		]]>
+		ORDER BY A.REG_DATE DESC
+	</select>
+	
+	<insert id="banner.registSlidingBanner" parameterClass="map">
+		<![CDATA[ 
+			INSERT INTO TB_BANNER_INFO(
+				BN_IDX, BN_GUBUN, TITLE, CONT, START_DATE, START_HH, START_MM, END_DATE, END_HH, END_MM, LINK_URL,
+				USE_YN, REG_DATE, REG_ID, REG_IP, DEL_YN
+			)VALUES(
+				#bnIdx#, #bnGubun#, #title#, #cont#, #startDate#, #startHh#, #startMm#, #endDate#, #endHh#, #endMm#, #linkUrl#,
+				#useYn#, now(), #regId#, #regIp#, 'N'
+			)
+		]]>
+	</insert>
+
+	<select id="banner.slidingBannerDetail" parameterClass="map" resultMap="bbsDataMap">
+		<![CDATA[ 
+			SELECT 
+					      A.BN_IDX
+						, A.TITLE
+						, A.CONT
+						, A.BN_GUBUN
+						, A.BN_SEQ
+						, A.START_DATE
+						, A.START_HH
+						, A.START_MM
+						, A.END_DATE
+						, A.END_HH
+						, A.END_MM
+						, A.LINK_URL
+						, A.USE_YN
+						, A.REG_DATE
+						, A.REG_ID
+						, A.REG_IP
+						, A.MOD_DATE
+						, A.MOD_ID
+						, A.MOD_IP
+						, A.DEL_YN      
+					
+						, ifnull(F.FILE_CNT,0) FILE_CNT  
+	            		, T.ATTACH_IDX
+				FROM TB_BANNER_INFO A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.BN_IDX
+           			                     
+			         LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# AND GUBUN = 'C'
+                            		   GROUP BY DATA_IDX) T ON T.DATA_IDX = A.BN_IDX                     
+                                               		           
+				WHERE A.DEL_YN = 'N'
+				 AND A.BN_IDX = #bnIdx# AND A.BN_GUBUN = #bnGubun#
+		]]>
+	</select>
+	
+	<update id="banner.modifySlidingBanner" parameterClass="map">
+		UPDATE TB_BANNER_INFO SET
+			  TITLE = #title#
+			, CONT = #cont#
+			, START_DATE = #startDate#
+			, START_HH = #startHh#
+			, START_MM = #startMm#
+			, END_DATE = #endDate#
+			, END_HH = #endHh#
+			, END_MM = #endMm#
+			, LINK_URL = #linkUrl#
+			, USE_YN = #useYn#
+			, MOD_DATE = Now()
+			, MOD_ID = #modId#
+			, MOD_IP = #modIp#	
+		WHERE BN_IDX = #bnIdx#
+	</update>
+	
+	<update id="banner.deleteBanner" parameterClass="map">
+		UPDATE TB_BANNER_INFO SET
+			  DEL_YN      = 'Y'
+			, DEL_ID      = #del_id#
+			, DEL_DATE      = now()
+			, DEL_IP      = #del_ip#
+		WHERE BN_IDX     = #bnIdx#
+	</update>
+	
+	
+	<select id="banner.mainBannerList" parameterClass="map" resultClass="egovMap">
+			SELECT * FROM (
+				SELECT 
+						  A.BN_IDX
+						, A.BN_GUBUN  
+						, A.BN_SEQ
+						, A.TITLE
+						, A.CONT
+						, A.START_DATE
+						, A.START_HH
+						, A.START_MM
+						, A.END_DATE
+						, A.END_HH
+						, A.END_MM
+						, A.REG_DATE
+						, A.USE_YN
+
+						, ifnull(F.FILE_CNT,0) FILE_CNT  
+	            		, T.ATTACH_IDX AS ATTACH_IDX
+
+				FROM TB_BANNER_INFO A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.BN_IDX
+           			                     
+			         LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# AND GUBUN = 'C'
+                            		   GROUP BY DATA_IDX) T ON T.DATA_IDX = A.BN_IDX                     
+                            		           
+				WHERE A.DEL_YN    = 'N' AND A.BN_GUBUN = #bnGubun#
+				 
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.CONT LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.TITLE LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.TITLE LIKE CONCAT('%', #search_keyword#, '%') OR A.CONT LIKE CONCAT('%', #search_keyword#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+		<![CDATA[   
+			) A			
+		]]>
+		ORDER BY A.USE_YN DESC, A.BN_SEQ ASC
+		<isNotEmpty property="firstIndex">
+			 limit #firstIndex#, #pageUnit# 
+		</isNotEmpty>
+	</select>
+	
+	<select id="banner.mainBannerListCnt" parameterClass="java.util.HashMap" resultClass="int">
+			SELECT COUNT(*) FROM (
+				SELECT 
+						  A.BN_IDX
+						, A.BN_GUBUN  
+						, A.BN_SEQ
+						, A.TITLE
+						, A.CONT
+						, A.START_DATE
+						, A.START_HH
+						, A.START_MM
+						, A.END_DATE
+						, A.END_HH
+						, A.END_MM
+						, A.REG_DATE
+						, A.USE_YN
+
+						, ifnull(F.FILE_CNT,0) FILE_CNT  
+	            		, T.ATTACH_IDX AS ATTACH_IDX
+
+				FROM TB_BANNER_INFO A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.BN_IDX
+           			                     
+			         LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# AND GUBUN = 'C'
+                            		   GROUP BY DATA_IDX) T ON T.DATA_IDX = A.BN_IDX                     
+                            		           
+				WHERE A.DEL_YN    = 'N' AND A.BN_GUBUN = #bnGubun#
+				 
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.CONT LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.TITLE LIKE CONCAT('%', #search_keyword#, '%')
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.TITLE LIKE CONCAT('%', #search_keyword#, '%') OR A.CONT LIKE CONCAT('%', #search_keyword#, '%'))
+			</isEmpty>
+		</isNotEmpty>
+		<![CDATA[   
+			) A			
+		]]>
+		ORDER BY A.USE_YN DESC, A.BN_SEQ ASC
+	</select>
+	
+	<select id="banner.mainBannerDetail" parameterClass="map" resultMap="bbsDataMap">
+		<![CDATA[ 
+			SELECT 
+					      A.BN_IDX
+						, A.TITLE
+						, A.BN_GUBUN
+						, A.BN_SEQ
+						, A.CONT
+						, A.START_DATE
+						, A.START_HH
+						, A.START_MM
+						, A.END_DATE
+						, A.END_HH
+						, A.END_MM
+						, A.LINK_URL
+						, A.USE_YN
+						, A.REG_DATE
+						, A.REG_ID
+						, A.REG_IP
+						, A.MOD_DATE
+						, A.MOD_ID
+						, A.MOD_IP
+						, A.DEL_YN      
+					
+						, ifnull(F.FILE_CNT,0) FILE_CNT  
+	            		, T.ATTACH_IDX
+				FROM TB_BANNER_INFO A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.BN_IDX
+           			                     
+			         LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND FILE_GUBUN = #file_gubun# AND GUBUN = 'C'
+                            		   GROUP BY DATA_IDX) T ON T.DATA_IDX = A.BN_IDX                     
+                                               		           
+				WHERE A.DEL_YN = 'N'
+				 AND A.BN_IDX = #bnIdx# AND A.BN_GUBUN = #bnGubun#
+		]]>
+	</select>
+	
+	<insert id="banner.registMainBanner" parameterClass="map">
+		<![CDATA[ 
+			INSERT INTO TB_BANNER_INFO(
+				BN_IDX, BN_GUBUN, TITLE, BN_SEQ, CONT, START_DATE, START_HH, START_MM, END_DATE, END_HH, END_MM, LINK_URL,
+				USE_YN, REG_DATE, REG_ID, REG_IP, DEL_YN
+			)VALUES(
+				#bnIdx#, #bnGubun#, #title#, #bnSeq#, #cont#, #startDate#, #startHh#, #startMm#, #endDate#, #endHh#, #endMm#, #linkUrl#,
+				#useYn#, NOW(), #regId#, #regIp#, 'N'
+			)
+		]]>
+	</insert>
+	
+	<update id="banner.modifyMainBanner" parameterClass="map">
+		UPDATE TB_BANNER_INFO SET
+			  TITLE = #title#
+			, CONT = #cont#
+			, BN_SEQ = #bnSeq#
+			, START_DATE = #startDate#
+			, START_HH = #startHh#
+			, START_MM = #startMm#
+			, END_DATE = #endDate#
+			, END_HH = #endHh#
+			, END_MM = #endMm#
+			, LINK_URL = #linkUrl#
+			, USE_YN = #useYn#
+			, MOD_DATE = Now()
+			, MOD_ID = #modId#
+			, MOD_IP = #modIp#	
+		WHERE BN_IDX = #bnIdx#
+	</update>
+	
+	
+	<select id="banner.attachFileList" parameterClass="map" resultClass="egovMap">
+		SELECT *
+		FROM TB_ATTACH_FILE
+		WHERE DEL_YN = 'N' 
+		  AND FILE_GUBUN like 'BN%' 
+		  AND GUBUN = #GUBUN#
+		  AND DATA_IDX = #bnIdx# 
+		  AND DEL_YN = 'N'
+	</select>
+	
+	<insert id="banner.registAttachFile" parameterClass="map">
+		<selectKey keyProperty="idx" type="pre" resultClass="String">
+			SELECT concat('BF' , LPAD( ifnull(MAX(SUBSTR(ATTACH_IDX , 3)) , 0) + 1 , 10 , '0' )) IDX 
+			FROM TB_ATTACH_FILE
+			WHERE FILE_GUBUN = #fileGubun# 
+			  AND ATTACH_IDX LIKE 'BF%'      
+		</selectKey>
+		<![CDATA[ 
+			INSERT INTO TB_ATTACH_FILE(
+				 FILE_GUBUN
+				,DATA_IDX
+				,ATTACH_IDX
+				,GUBUN
+				,ORG_FILE_NM
+				,FILE_NM
+				,FILE_PATH
+				,DOWNLOAD_CNT
+				,REG_DT
+				,DEL_YN
+			)VALUES(
+				 #fileGubun# , #data_idx# , #idx# ,#gubun#, #ORG_FILE_NM# , #FILE_NM#
+				,#FILE_PATH#
+				, 0
+				,now() 
+				,'N'
+			)
+		]]>
+	</insert>
+	
+	<update id="banner.deleteAttachFile" parameterClass="map">
+		UPDATE TB_ATTACH_FILE SET 
+			  DEL_YN = 'Y'
+			, DEL_DT = now()
+		WHERE TRIM(FILE_GUBUN)  = 'BN'
+		  AND trim(DATA_IDX)   = #bnIdx#
+		  AND trim(ATTACH_IDX) = #attach_idx#
+	</update>
+	
+	<select id="banner.attachFileListPc" parameterClass="map" resultClass="egovMap">
+		SELECT
+				 FILE_GUBUN
+				,DATA_IDX
+				,TRIM(ATTACH_IDX)  as ATTACH_IDX
+				,GUBUN				
+				,ORG_FILE_NM
+				,FILE_NM
+				,FILE_PATH
+				,DOWNLOAD_CNT
+				,DEL_YN
+				,DEL_DT
+		FROM TB_ATTACH_FILE
+		WHERE DEL_YN = 'N' AND FILE_GUBUN like 'BN%' AND GUBUN = 'C'
+		  AND DATA_IDX = #bnIdx# 
+	</select>
+	
+	<select id="banner.attachFileListMobile" parameterClass="map" resultClass="egovMap">
+		SELECT
+				 FILE_GUBUN
+				,DATA_IDX
+				,TRIM(ATTACH_IDX)  as ATTACH_IDX
+				,GUBUN				
+				,ORG_FILE_NM
+				,FILE_NM
+				,FILE_PATH
+				,DOWNLOAD_CNT
+				,DEL_YN
+				,DEL_DT
+		FROM TB_ATTACH_FILE
+		WHERE DEL_YN = 'N' AND FILE_GUBUN like 'BN%' AND GUBUN = 'M'
+		  AND DATA_IDX = #bnIdx# 
+	</select>
+	
+
+	
+</sqlMap>

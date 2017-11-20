@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="uvFile">
+
+	<typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+	<insert id="uvFile.insert" parameterClass="map">
+		<selectKey keyProperty="IDX" type="pre" resultClass="String">
+			SELECT concat('BF' , LPAD( ifnull(MAX(SUBSTR(ATTACH_IDX , 3)) , 0) + 1 , 10 , '0' )) IDX 
+			FROM TB_ATTACH_FILE
+			WHERE FILE_GUBUN = #file_gubun# 
+			  AND ATTACH_IDX LIKE 'BF%'      
+		</selectKey>
+			INSERT INTO TB_ATTACH_FILE(
+				 FILE_GUBUN
+				,DATA_IDX
+				,ATTACH_IDX
+				,GUBUN
+				,ORG_FILE_NM
+				,FILE_NM
+				,FILE_PATH
+				,FILE_TYPE
+				,MAIN_IMG_FALG
+				,DOWNLOAD_CNT
+				,REG_DT
+				,DEL_YN
+			)VALUES(
+				 #FILE_GUBUN# 
+				,#DATA_IDX# 
+				,#IDX#
+				,#GUBUN#
+				,#ORG_FILE_NM#
+				,#FILE_NM#
+				,#FILE_PATH#
+				,#FILE_TYPE#
+				<isEmpty property="MAIN_IMG_FALG">
+				,'N'
+				</isEmpty>
+				<isNotEmpty property="MAIN_IMG_FALG">
+				,#MAIN_IMG_FALG#
+				</isNotEmpty>
+				, 0
+				,now() 
+				,'N'
+			)
+	</insert> 
+	
+	<update id="uvFile.delete" parameterClass="map">
+		UPDATE TB_ATTACH_FILE SET 
+			  DEL_YN = 'Y'
+			, DEL_DT = now()
+		WHERE TRIM(FILE_GUBUN) = #FILE_GUBUN#
+		  AND DATA_IDX         = #DATA_IDX#
+		  AND TRIM(FILE_NM) = #FILE_NM#
+	</update>
+	
+	<select id="uvFile.select" parameterClass="map" resultClass="egovMap">
+		SELECT 
+		* 
+		FROM TB_ATTACH_FILE 
+		WHERE DEL_YN = 'N'
+		<isNotEmpty property="FILE_GUBUN">
+		AND FILE_GUBUN = #FILE_GUBUN#
+		</isNotEmpty>
+		<isNotEmpty property="GUBUN">
+		AND GUBUN = #GUBUN#
+		</isNotEmpty>
+		<isNotEmpty property="DATA_IDX">
+		AND DATA_IDX = #DATA_IDX#
+		</isNotEmpty>
+		<isNotEmpty property="FILE_NM">
+		AND FILE_NM = #FILE_NM#
+		</isNotEmpty>		
+		ORDER BY ATTACH_IDX ASC
+	</select>
+	
+	<!-- 대표 이미지 초기화 -->
+	<update id="uvFile.initMainImage" parameterClass="map">
+		UPDATE TB_ATTACH_FILE AS A1, TB_ATTACH_FILE AS A2 
+		SET A1.MAIN_IMG_FALG = 'N'
+		WHERE A1.DATA_IDX = A2.DATA_IDX
+		AND A1.FILE_GUBUN = A2.FILE_GUBUN
+		AND A1.GUBUN = A2.GUBUN
+		AND A2.FILE_NM = #MAIN_IMG_FILE_NM#
+	</update>
+
+	<!-- 대표 이미지 세팅 -->
+	<update id="uvFile.setMainImage" parameterClass="map">
+		UPDATE TB_ATTACH_FILE SET
+			MAIN_IMG_FALG = 'Y'
+		WHERE FILE_NM = #MAIN_IMG_FILE_NM#
+	</update>
+</sqlMap>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMapConfig PUBLIC "-//iBATIS.com//DTD SQL Map Config 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-config-2.dtd">
+
+<sqlMapConfig>
+
+	<sqlMap resource="inu/sqlmap/mng/IBuilderCompMng_SQL_ORACLE.xml" />
+	
+	<sqlMap resource="inu/sqlmap/system/system_sql.xml" />
+	
+	<sqlMap resource="inu/sqlmap/mng/common_sql.xml" />
+	
+	<sqlMap resource="inu/sqlmap/ncs/NcsBbs_sql.xml" />
+	
+	<sqlMap resource="inu/sqlmap/user/VcmsUserMng_sql.xml" />
+	
+	<sqlMap resource="inu/sqlmap/ncs/VodData_sql.xml" />
+	
+	<sqlMap resource="inu/sqlmap/contentsText/ContentsTextData_sql.xml" />
+	
+	<sqlMap resource="inu/sqlmap/tagMenu/VcmsTagMenuMng_sql.xml" />
+	
+	<sqlMap resource="inu/sqlmap/banner/banner_sql.xml" />
+	
+	<sqlMap resource="inu/sqlmap/live/LiveBroadManage_sql.xml" />
+
+	<sqlMap resource="inu/sqlmap/common/UvFile/UvFile_sql.xml" />
+	
+	<sqlMap resource="inu/sqlmap/ncs/BbsMaster_sql.xml" /> <!-- 게시판 마스터  2015.09.14 -->
+	
+	<sqlMap resource="inu/sqlmap/ncs/BbsComment_sql.xml" /> <!-- 게시판 댓글  2015.09.14 -->
+	
+	<sqlMap resource="inu/sqlmap/statistics/statistics_sql.xml" />
+	
+	<sqlMap resource="inu/sqlmap/popup/PopUp_sql.xml" />
+	
+	<sqlMap resource="inu/sqlmap/stb/STB_sql.xml" />
+</sqlMapConfig>

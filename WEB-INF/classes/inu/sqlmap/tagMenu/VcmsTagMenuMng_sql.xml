@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="vcmsUserMng">
+
+	<select id="vcmsTagMenuMng.selectTagMenuList" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT @RNUM := @RNUM + 1 AS RNUM,
+			A.TAG_IDX, 
+			TAG_NAME, 
+			TAG_ICON_URL, 
+			TAG_SEQ, 
+			TAG_SERVICE_YN,
+			TAG_DESCRIPTION,
+            B.TEXT_IDX,
+			<!-- (SELECT COUNT(*) FROM TB_TAG_MENU_CONTENTS_RELA WHERE TAG_IDX = A.TAG_IDX AND A.DEL_YN = 'N') AS CONTENT_CNT -->
+			(SELECT COUNT(*) FROM TB_TAG_MENU_CONTENTS_RELA WHERE TAG_IDX = A.TAG_IDX AND A.DEL_YN = 'N') AS TEXT_CNT,
+			(SELECT COUNT(*) FROM TB_TAG_MENU_VOD_RELA WHERE TAG_IDX = A.TAG_IDX AND A.DEL_YN = 'N') AS VOD_CNT
+		FROM ( SELECT @RNUM := 0 ) R, TB_TAG_MENU_MANAGE A
+        	LEFT OUTER JOIN TB_TAG_MENU_CONTENTS_RELA B
+             ON A.TAG_IDX = B.TAG_IDX
+             WHERE A.DEL_YN = 'N'
+             GROUP BY A.TAG_IDX
+		<isEmpty property="listSort">
+			ORDER BY TAG_IDX ASC
+		</isEmpty>
+		<isNotEmpty property="listSort">
+			<!-- 태그 번호 정렬 -->
+			<isEqual property="listSort" compareValue="1">
+				ORDER BY RNUM ASC
+			</isEqual>
+			<isEqual property="listSort" compareValue="2">
+				ORDER BY RNUM DESC
+			</isEqual>
+			<!-- 태그 이름 정렬 -->
+			<isEqual property="listSort" compareValue="3">
+				ORDER BY TAG_NAME ASC
+			</isEqual>
+			<isEqual property="listSort" compareValue="4">
+				ORDER BY TAG_NAME DESC
+			</isEqual>
+			<!-- 태그 노출 우선순위 정렬 -->
+			<isEqual property="listSort" compareValue="5">
+				ORDER BY TAG_SEQ ASC
+			</isEqual>
+			<isEqual property="listSort" compareValue="6">
+				ORDER BY TAG_SEQ DESC
+			</isEqual>
+			<!-- 태그 노출 여부 정렬-->
+			<isEqual property="listSort" compareValue="7">
+				ORDER BY TAG_SERVICE_YN DESC
+			</isEqual>
+			<isEqual property="listSort" compareValue="8">
+				ORDER BY TAG_SERVICE_YN ASC
+			</isEqual>
+			<!-- 컨텐츠 총 수 정렬-->
+			<isEqual property="listSort" compareValue="9">
+				ORDER BY CONTENT_CNT ASC
+			</isEqual>
+			<isEqual property="listSort" compareValue="10">
+				ORDER BY CONTENT_CNT DESC
+			</isEqual>
+		</isNotEmpty>
+	</select>
+	
+	<select id="vcmsTagMenuMng.selectTagContentCount" parameterClass="map" resultClass="Integer">
+		SELECT COUNT(*) FROM TB_TAG_MENU_VOD_RELA WHERE TAG_IDX = #tagIdx#
+	</select>
+	
+ 	<update id="vcmsTagMenuMng.updateTagMenu" parameterClass="map">
+		UPDATE TB_TAG_MENU_MANAGE SET
+			   TAG_NAME = #tagName#
+			   ,TAG_ICON_URL = #tagIconUrl#
+			   ,TAG_SEQ = #tagSeq#
+			   ,TAG_SERVICE_YN = #serviceYn#
+			   ,TAG_DESCRIPTION = #tagDesc#
+		 WHERE TAG_IDX = #tagIdx#
+	</update>
+	
+ 	<insert id="vcmsTagMenuMng.insertTagMenu" parameterClass="map">
+		INSERT INTO TB_TAG_MENU_MANAGE 
+			(TAG_IDX, TAG_NAME, TAG_ICON_URL, TAG_SEQ, TAG_SERVICE_YN, TAG_DESCRIPTION, DEL_YN) 
+			VALUES 
+			(#addTagIdx#, #addTagName#, '', 999, 'N', '', 'N')
+	</insert>
+	
+	<select id="vcmsTagMenuMng.selectTagIconList" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT @RNUM := @RNUM + 1 AS RNUM,
+			TAG_ICON_IDX,
+			TAG_ICON_NAME,
+			TAG_ICON_URL,
+			TAG_SKIN_TYPE
+		FROM TB_TAG_ICON_MANAGE, ( SELECT @RNUM := 0 ) R
+	</select>
+	
+	<select id="vcmsTagMenuMng.selectTagList" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT TAG_IDX
+		     , TAG_NAME
+		  FROM TB_TAG_MENU_MANAGE
+		  WHERE DEL_YN = 'N'
+	</select>
+	
+	<select id="vcmsTagMenuMng.selectVodList" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT A.*
+		     , CASE WHEN IFNULL(B.TAG_IDX, 0) = 0 THEN 'N'
+		            ELSE 'Y'
+		       END AS TAG_VOD_YN
+		  FROM TB_VOD_DATA A
+		LEFT OUTER JOIN ( SELECT * FROM TB_TAG_MENU_VOD_RELA WHERE TAG_IDX = #tagIdx# ) B ON A.VOD_IDX = B.VOD_IDX
+		 WHERE 1=1
+		   AND A.DEL_YN = 'N'
+		   <isNotEmpty property="searchText">
+		   AND A.VOD_TITLE LIKE CONCAT('%', #searchText#, '%')
+		   </isNotEmpty>
+		   ORDER BY REG_DT DESC
+	</select>
+	
+	<select id="vcmsTagMenuMng.selectVodTagList" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT B.*
+		  FROM TB_TAG_MENU_VOD_RELA A  
+		LEFT OUTER JOIN TB_VOD_DATA B ON A.VOD_IDX = B.VOD_IDX
+		 WHERE A.TAG_IDX = #tagIdx#
+		   AND B.DEL_YN = 'N'
+	</select>
+	
+	<select id="vcmsTagMenuMng.selectVodConTagList" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT 
+			'TEXT' AS CON_TYPE,
+			C.TEXT_IDX AS IDX,
+			TITLE AS TITLE,
+			CONT AS CTNT,
+			REG_DT,
+			HITS,
+			'' AS FILE_NM
+		FROM TB_CONTENTS_TEXT_DATA C, TB_TAG_MENU_CONTENTS_RELA CR
+		WHERE C.TEXT_IDX = CR.TEXT_IDX
+			AND DEL_YN='N'
+			AND CR.TAG_IDX = #tagIdx#
+		UNION
+		SELECT 
+			'VOD' AS CON_TYPE,
+			A.VOD_IDX AS IDX,
+			VOD_TITLE AS TITLE,
+			VOD_CONT AS CTNT,
+			REG_DT,
+			HITS,
+			'' AS FILE_NM
+		FROM TB_VOD_DATA A, TB_TAG_MENU_VOD_RELA VR
+		WHERE DEL_YN='N'
+		      AND A.VOD_IDX = VR.VOD_IDX
+			AND VR.TAG_IDX = #tagIdx#
+		ORDER BY REG_DT DESC
+	</select>
+	
+	<update id="vcmsTagMenuMng.removeVodTagProc" parameterClass="map">
+		DELETE FROM TB_TAG_MENU_VOD_RELA WHERE TAG_IDX = #tagIdx#
+	</update>
+	
+	<insert id="vcmsTagMenuMng.saveVodTagProc" parameterClass="map">
+		INSERT INTO TB_TAG_MENU_VOD_RELA (
+			TAG_IDX, VOD_IDX
+		) VALUES (
+			#tagIdx#, #vodIdx#  
+		)
+	</insert>
+	
+	<delete id="vcmsTagMenuMng.deleteIcon" parameterClass="java.util.HashMap">
+		DELETE FROM TB_TAG_ICON_MANAGE WHERE TAG_ICON_IDX = #tagIconIdx#
+	</delete>
+	
+	<!-- 태그 아이콘 디테일 -->
+	<select id="vcmsTagMenuMng.selectIconDetail" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT TAG_ICON_IDX,
+		       TAG_ICON_NAME, 
+		       TAG_ICON_URL, 
+		       TAG_SKIN_TYPE
+		FROM TB_TAG_ICON_MANAGE
+		WHERE TAG_ICON_IDX = #iconIdx#
+	</select>
+	
+	<insert id="vcmsTagMenuMng.saveIcon" parameterClass="map">
+		<selectKey keyProperty="iconIds" type="pre" resultClass="java.lang.String">
+			SELECT IFNULL(MAX(TAG_ICON_IDX),0)+1 AS iconIds
+ 			  FROM TB_TAG_ICON_MANAGE
+		</selectKey>
+		INSERT INTO TB_TAG_ICON_MANAGE (
+			TAG_ICON_IDX, TAG_ICON_NAME, TAG_ICON_URL
+		) VALUES (
+			#iconIds#, #iconName#, #fileName#
+		)
+	</insert>
+	
+	<select id="vcmsTagMenuMng.attachFileList" parameterClass="map" resultClass="egovMap">
+		SELECT *
+		FROM TB_TAG_ICON_MANAGE
+		WHERE TAG_ICON_IDX = #iconIdx#
+	</select>
+	
+	<select id="vcmsTagMenuMng.selectConList" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT A.*
+		     , CASE WHEN IFNULL(B.TAG_IDX, 0) = 0 THEN 'N'
+		            ELSE 'Y'
+		       END AS TAG_CON_YN
+		  FROM TB_CONTENTS_TEXT_DATA A
+		LEFT OUTER JOIN ( SELECT * FROM TB_TAG_MENU_CONTENTS_RELA WHERE TAG_IDX = #tagIdx# ) B ON A.TEXT_IDX = B.TEXT_IDX
+		 WHERE 1=1
+		   AND A.DEL_YN = 'N'
+		   <isNotEmpty property="searchText">
+		   AND A.TITLE LIKE CONCAT('%', #searchText#, '%')
+		   </isNotEmpty>
+	</select>
+	
+	<select id="vcmsTagMenuMng.selectConTagList" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT B.*
+		  FROM TB_TAG_MENU_CONTENTS_RELA A  
+		LEFT OUTER JOIN TB_CONTENTS_TEXT_DATA B ON A.TEXT_IDX = B.TEXT_IDX
+		 WHERE A.TAG_IDX = #tagIdx#
+		   AND B.DEL_YN = 'N'
+	</select>
+	
+	<update id="vcmsTagMenuMng.removeConTagProc" parameterClass="map">
+		DELETE FROM TB_TAG_MENU_CONTENTS_RELA WHERE TAG_IDX = #tagIdx#
+	</update>
+	
+	<insert id="vcmsTagMenuMng.saveConTagProc" parameterClass="map">
+		INSERT INTO TB_TAG_MENU_CONTENTS_RELA (
+			TAG_IDX, TEXT_IDX
+		) VALUES (
+			#tagIdx#, #textIdx#  
+		)
+	</insert>
+	
+	<update id="vcmsTagMenuMng.deleteTagMenu" parameterClass="map">
+		UPDATE TB_TAG_MENU_MANAGE 
+		       SET DEL_YN = 'Y',
+		           TAG_SERVICE_YN = 'N'
+		 WHERE TAG_IDX = #tagIdx#
+	</update>
+	
+	<select id="vcmsTagMenuMng.selectTagMenuListCnt" parameterClass="map" resultClass="Integer">
+		SELECT COUNT(*) FROM TB_TAG_MENU_MANAGE
+	</select>
+	
+</sqlMap>

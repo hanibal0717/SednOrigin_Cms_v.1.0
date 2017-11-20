@@ -1,0 +1,484 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="ncsBbs">
+
+	<typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+	<resultMap id="bbsDataMap" class="egovMap">
+        <result property="bbsMstIdx" column="BBS_MST_IDX"/>
+        <result property="dataIdx" column="DATA_IDX"/>
+        <result property="title" column="TITLE"/>
+        <result property="bbsRef" column="BBS_REF"/>
+        <result property="bbsLevel" column="BBS_LEVEL"/>
+        <result property="bbsStep" column="BBS_STEP" />
+        <result property="noticeYn" column="NOTICE_YN"/>        
+        <result property="cont" column="CONT" />
+        <result property="dataPwd" column="DATA_PWD" />
+        <result property="hits" column="HITS"  />
+        <result property="regNm" column="REG_NM"  />
+        <result property="regDt" column="REG_DT"  />
+        <result property="regId" column="REG_ID"  />
+        <result property="regIp" column="REG_IP"  />
+        <result property="modDt" column="MOD_DT"  />
+        <result property="modId" column="MOD_ID"  />
+        <result property="modIp" column="MOD_IP"  />
+        <result property="delYn" column="DEL_YN"  />
+        <result property="fileCnt" column="FILE_CNT"  />
+        <result property="refCnt" column="REF_CNT"  />        
+        <result property="thumAttchIdx" column="THUM_ATTACH_IDX"  />        
+        <result property="attachIdx" column="ATTACH_IDX"  />
+    </resultMap>
+	
+	<select id="ncsBbs.bbsDataCnt" parameterClass="map" resultClass="Integer">
+			SELECT
+				COUNT(*) CNT
+			FROM TB_BBS_DATA A
+		   WHERE A.BBS_MST_IDX = #bbs_mst_idx#
+			 <isEqual property="delYn" compareValue="N"> AND A.DEL_YN    = 'N'</isEqual>
+			 AND A.DEL_YN NOT LIKE 'M'
+			 AND A.NOTICE_YN = 'N'
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.CONT LIKE '%' || #search_keyword# || '%'
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.TITLE LIKE '%' || #search_keyword# || '%'
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.TITLE LIKE '%' || #search_keyword# || '%' OR A.CONT  LIKE '%' || #search_keyword# || '%')
+			</isEmpty>
+		</isNotEmpty>
+	</select>
+	
+	
+	<select id="ncsBbs.bbsDataNoticeList" parameterClass="map" resultMap="bbsDataMap">
+			SELECT A.* 
+			FROM
+			( 
+				SELECT
+					   A.BBS_MST_IDX,  A.DATA_IDX,  A.TITLE,  A.BBS_REF,  A.BBS_LEVEL,
+					   A.BBS_STEP,     A.NOTICE_YN, A.CONT,   A.DATA_PWD, A.HITS,
+					   A.ATCH_FILE_ID, A.REG_DT,    A.REG_ID, A.REG_NM,   A.REG_IP,
+					   A.MOD_DT,       A.MOD_ID,    A.MOD_IP, A.DEL_YN				        
+					
+					, F.ATTACH_IDX
+					, ifnull(F.FILE_CNT,0) FILE_CNT  
+            		, 0 as REF_CNT 
+            		, T.ATTACH_IDX AS THUM_ATTACH_IDX
+				FROM TB_BBS_DATA A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT , MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_BBS_ATTACH_FILE
+                            		   WHERE DEL_YN='N' AND BBS_MST_IDX = #bbs_mst_idx# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.DATA_IDX
+           			
+           			 LEFT OUTER JOIN (SELECT BBS_MST_IDX, DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_BBS_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND GUBUN = 'T'  
+							   			 AND BBS_MST_IDX = #bbs_mst_idx#
+                            		   GROUP BY BBS_MST_IDX, DATA_IDX) T ON T.DATA_IDX = A.DATA_IDX AND T.BBS_MST_IDX = A.BBS_MST_IDX
+                            		   
+				WHERE A.BBS_MST_IDX = #bbs_mst_idx#
+				 <isEqual property="delYn" compareValue="N"> AND A.DEL_YN    = 'N'</isEqual>
+				 AND A.DEL_YN NOT LIKE 'M'				 
+				 AND A.NOTICE_YN = 'Y'
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.CONT LIKE '%' || #search_keyword# || '%'
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.TITLE LIKE '%' || #search_keyword# || '%'
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.TITLE LIKE '%' || #search_keyword# || '%' OR A.CONT  LIKE '%' || #search_keyword# || '%')
+			</isEmpty>
+		</isNotEmpty>
+		<![CDATA[  		
+				ORDER BY A.REG_DT DESC, A.BBS_REF DESC , A.BBS_STEP ASC
+			) A
+		]]>
+	</select>
+
+	<select id="ncsBbs.bbsDataList" parameterClass="map" resultMap="bbsDataMap">
+			SELECT * FROM (
+				SELECT 
+					   A.BBS_MST_IDX,  A.DATA_IDX,  A.TITLE,  A.BBS_REF,  A.BBS_LEVEL,
+					   A.BBS_STEP,     A.NOTICE_YN, A.CONT,   A.DATA_PWD, A.HITS,
+					   A.ATCH_FILE_ID, A.REG_DT,    A.REG_ID, A.REG_NM,   A.REG_IP,
+					   A.MOD_DT,       A.MOD_ID,    A.MOD_IP, A.DEL_YN				        
+					
+					, F.ATTACH_IDX
+					, ifnull(F.FILE_CNT,0) FILE_CNT  
+            		, ifnull(C.REF_CNT,0) REF_CNT
+            		, T.ATTACH_IDX AS THUM_ATTACH_IDX
+				FROM TB_BBS_DATA A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_BBS_ATTACH_FILE WHERE DEL_YN='N' AND BBS_MST_IDX = #bbs_mst_idx# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.DATA_IDX
+           			
+           			 LEFT OUTER JOIN ( SELECT BBS_REF, COUNT(BBS_REF) REF_CNT
+			                             FROM TB_BBS_DATA WHERE DEL_YN='N' AND BBS_MST_IDX = #bbs_mst_idx# AND BBS_LEVEL > 0
+			                             GROUP BY BBS_REF) C ON  C.BBS_REF = A.DATA_IDX
+			                             
+			         LEFT OUTER JOIN (SELECT BBS_MST_IDX, DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_BBS_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND GUBUN = 'T' 
+							   			  AND BBS_MST_IDX = #bbs_mst_idx#  
+                            		   GROUP BY BBS_MST_IDX, DATA_IDX) T ON T.DATA_IDX = A.DATA_IDX AND T.BBS_MST_IDX = A.BBS_MST_IDX                     
+                             
+				WHERE A.BBS_MST_IDX = #bbs_mst_idx#
+				 <isEqual property="delYn" compareValue="N"> AND A.DEL_YN    = 'N'</isEqual>
+				 AND A.NOTICE_YN = 'N'
+				 AND A.DEL_YN NOT LIKE 'M'
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.CONT LIKE '%' || #search_keyword# || '%'
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.TITLE LIKE '%' || #search_keyword# || '%'
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.TITLE LIKE '%' || #search_keyword# || '%' OR A.CONT  LIKE '%' || #search_keyword# || '%')
+			</isEmpty>
+		</isNotEmpty>
+		<![CDATA[   
+			) A			
+		]]>
+		ORDER BY A.BBS_REF DESC , A.BBS_STEP ASC 
+	</select>
+	
+	<select id="ncsBbs.bbsDataDetail" parameterClass="map" resultMap="bbsDataMap">
+		<![CDATA[ 
+			SELECT     A.BBS_MST_IDX,  A.DATA_IDX,  A.TITLE,  A.BBS_REF,  A.BBS_LEVEL,
+					   A.BBS_STEP,     A.NOTICE_YN, A.CONT,   A.DATA_PWD, A.HITS,
+					   A.ATCH_FILE_ID, A.REG_DT,    A.REG_ID, A.REG_NM,   A.REG_IP,
+					   A.MOD_DT,       A.MOD_ID,    A.MOD_IP, A.DEL_YN
+					
+					, F.ATTACH_IDX
+					, ifnull(F.FILE_CNT,0) FILE_CNT  
+            		, ifnull(C.REF_CNT,0) REF_CNT
+            		, T.ATTACH_IDX AS THUM_ATTACH_IDX            		
+			FROM TB_BBS_DATA A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_BBS_ATTACH_FILE WHERE DEL_YN='N' AND BBS_MST_IDX = #bbs_mst_idx# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.DATA_IDX
+           			 
+           			 LEFT OUTER JOIN ( SELECT BBS_REF, COUNT(BBS_REF) REF_CNT
+			                             FROM TB_BBS_DATA WHERE DEL_YN='N' AND BBS_MST_IDX = #bbs_mst_idx# AND BBS_LEVEL > 0
+			                             GROUP BY BBS_REF) C ON  C.BBS_REF = A.DATA_IDX
+                     
+                     LEFT OUTER JOIN (SELECT BBS_MST_IDX, DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_BBS_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND GUBUN = 'T'                            			
+                            			AND BBS_MST_IDX = #bbs_mst_idx#                            			                              
+                            		   GROUP BY BBS_MST_IDX, DATA_IDX) T ON T.DATA_IDX = A.DATA_IDX AND T.BBS_MST_IDX = A.BBS_MST_IDX  
+                            		                   
+			WHERE A.BBS_MST_IDX = #bbs_mst_idx#
+			AND trim(A.DATA_IDX) = #data_idx#
+		]]>
+	</select>
+	
+	
+	<insert id="ncsBbs.registBbsData" parameterClass="map">		
+		<![CDATA[ 
+			INSERT INTO TB_BBS_DATA(
+				 BBS_MST_IDX,  DATA_IDX,  TITLE,  BBS_REF,  BBS_LEVEL,
+				 BBS_STEP,     NOTICE_YN, CONT,   DATA_PWD, HITS,
+				 REG_DT,       REG_ID, REG_NM,   REG_IP,
+				 MOD_DT,       MOD_ID,    MOD_IP, DEL_YN
+			)VALUES(
+				  #bbs_mst_idx# , 	#idx# , 	  #title#, #bbs_ref# , 	#bbs_level#,  
+				  #bbs_step#,       #notice_yn# , #cont# , #data_pwd# , 0 ,
+				  now() , #session_id# , #reg_nm#, #req_ip#, 	
+				  now(), 	#session_id# , #req_ip# ,'N'
+			)
+		]]>
+	</insert>
+	
+	<update id="ncsBbs.modifyBbsData" parameterClass="map">
+		UPDATE TB_BBS_DATA SET
+			  TITLE             = #title#
+			, NOTICE_YN         = #notice_yn#
+			, CONT              = #cont#
+			, DATA_PWD          = #data_pwd#
+			, REG_NM            = #reg_nm#
+			, MOD_ID            = #mod_id#
+			, MOD_DT            = now()
+			, MOD_IP            = #mod_ip#			
+		WHERE BBS_MST_IDX       = #bbs_mst_idx#
+		  AND trim(DATA_IDX)    = #data_idx#
+	</update>
+	
+	
+	<update id="ncsBbs.deleteBbsData" parameterClass="map">
+		UPDATE TB_BBS_DATA SET
+			  DEL_YN = 'Y'
+			, MOD_ID      = #mod_id#
+			, MOD_DT      = now()
+			, MOD_IP      = #mod_ip#
+		WHERE BBS_MST_IDX = #bbs_mst_idx#
+		  AND trim(DATA_IDX) = #data_idx#
+	</update>
+	
+	
+	
+	<select id="ncsBbs.getNextDataIdx" parameterClass="map" resultClass="String">
+		 SELECT concat('BD', LPAD( ifnull(MAX(SUBSTR(DATA_IDX , 3)) , 0) + 1 , 10 , '0' )) IDX FROM TB_BBS_DATA
+		  WHERE BBS_MST_IDX = #bbs_mst_idx#
+			AND DATA_IDX LIKE 'BD%'
+	</select>
+	
+	<update id="ncsBbs.updateReplyStep" parameterClass="map">
+	<![CDATA[ 
+		UPDATE TB_BBS_DATA SET
+			   BBS_STEP = BBS_STEP+1
+		WHERE BBS_MST_IDX = #bbs_mst_idx#
+		  AND BBS_REF     = #bbs_ref#
+		  AND BBS_STEP    > #bbs_step#   
+	]]>	  
+	</update>
+	
+	
+	
+	<select id="ncsBbs.bbsQnaDataCnt" parameterClass="map" resultClass="Integer">
+			SELECT
+				COUNT(*) CNT
+			FROM TB_BBS_DATA A
+			WHERE A.BBS_MST_IDX = #bbs_mst_idx#
+			 <isEqual property="delYn" compareValue="N"> AND A.DEL_YN    = 'N'</isEqual>
+			 
+			 AND A.DEL_YN NOT LIKE 'M'
+			 AND A.BBS_LEVEL=0
+			 AND A.NOTICE_YN = 'N'
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.CONT LIKE '%' || #search_keyword# || '%'
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.TITLE LIKE '%' || #search_keyword# || '%'
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.TITLE LIKE '%' || #search_keyword# || '%' OR A.CONT  LIKE '%' || #search_keyword# || '%')
+			</isEmpty>
+		</isNotEmpty>
+	</select>
+	
+	  
+	<select id="ncsBbs.bbsQnaDataList" parameterClass="map" resultMap="bbsDataMap">
+				SELECT
+					A.BBS_MST_IDX,  A.DATA_IDX,  A.TITLE,  A.BBS_REF,  A.BBS_LEVEL,
+					A.BBS_STEP,     A.NOTICE_YN, A.CONT,   A.DATA_PWD, A.HITS,
+					A.ATCH_FILE_ID, A.REG_DT,    A.REG_ID, A.REG_NM,   A.REG_IP,
+					A.MOD_DT,       A.MOD_ID,    A.MOD_IP, A.DEL_YN
+										
+					, F.ATTACH_IDX
+					, ifnull(F.FILE_CNT,0) FILE_CNT  
+            		, ifnull(C.REF_CNT,0) REF_CNT 
+            		, T.ATTACH_IDX AS THUM_ATTACH_IDX 
+				FROM TB_BBS_DATA A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_BBS_ATTACH_FILE WHERE DEL_YN='N' AND BBS_MST_IDX = #bbs_mst_idx# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.DATA_IDX
+           			 
+           			 LEFT OUTER JOIN ( SELECT BBS_REF, COUNT(BBS_REF) REF_CNT
+			                             FROM TB_BBS_DATA WHERE DEL_YN='N' AND BBS_MST_IDX = #bbs_mst_idx# AND BBS_LEVEL > 0
+			                             GROUP BY BBS_REF) C ON  C.BBS_REF = A.DATA_IDX
+                     
+                     LEFT OUTER JOIN (SELECT BBS_MST_IDX, DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_BBS_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND GUBUN = 'T' 
+							   			AND BBS_MST_IDX = #bbs_mst_idx#
+                            		   GROUP BY BBS_MST_IDX, DATA_IDX) T ON T.DATA_IDX = A.DATA_IDX AND T.BBS_MST_IDX = A.BBS_MST_IDX 
+                   	         	        
+				WHERE A.BBS_MST_IDX = #bbs_mst_idx#
+				 <isEqual property="delYn" compareValue="N"> AND A.DEL_YN    = 'N'</isEqual>			 
+				 AND A.BBS_LEVEL=0
+				 AND A.NOTICE_YN = 'N'
+		<isNotEmpty property="search_keyword">
+			<isEqual property="search_type" compareValue="CONT">
+				AND A.CONT LIKE "%$search_keyword$%" 
+			</isEqual>
+			<isEqual property="search_type" compareValue="TITLE">
+				AND A.TITLE LIKE "%$search_keyword$%"
+			</isEqual>
+			<isEmpty property="search_type">
+				AND (A.TITLE LIKE "%$search_keyword$%" OR A.CONT LIKE "%$search_keyword$%")
+			</isEmpty>
+		</isNotEmpty>
+		 ORDER BY A.REG_DT DESC
+		 limit #firstIndex#, #lastIndex#
+	</select>
+	
+	
+	<select id="ncsBbs.bbsQnaAnswerList" parameterClass="map" resultMap="bbsDataMap">
+			  SELECT 
+					A.BBS_MST_IDX,  A.DATA_IDX,  A.TITLE,  A.BBS_REF,  A.BBS_LEVEL,
+					A.BBS_STEP,     A.NOTICE_YN, A.CONT,   A.DATA_PWD, A.HITS,
+					A.ATCH_FILE_ID, A.REG_DT,    A.REG_ID, A.REG_NM,   A.REG_IP,
+					A.MOD_DT,       A.MOD_ID,    A.MOD_IP, A.DEL_YN
+
+					, F.ATTACH_IDX
+					, ifnull(F.FILE_CNT,0) FILE_CNT  
+            		, ifnull(C.REF_CNT,0) REF_CNT   
+            		, T.ATTACH_IDX AS THUM_ATTACH_IDX            		
+				FROM TB_BBS_DATA A
+					 LEFT OUTER JOIN (SELECT DATA_IDX, COUNT(DATA_IDX) FILE_CNT , MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_BBS_ATTACH_FILE WHERE DEL_YN='N' AND BBS_MST_IDX = #bbs_mst_idx# 
+                            			GROUP BY DATA_IDX) F ON F.DATA_IDX = A.DATA_IDX
+           			
+           			 LEFT OUTER JOIN ( SELECT BBS_REF, COUNT(BBS_REF) REF_CNT
+			                             FROM TB_BBS_DATA WHERE DEL_YN='N' AND BBS_MST_IDX = #bbs_mst_idx# AND BBS_LEVEL > 0
+			                             GROUP BY BBS_REF) C ON  C.BBS_REF = A.DATA_IDX
+			         
+			         LEFT OUTER JOIN (SELECT BBS_MST_IDX, DATA_IDX, COUNT(DATA_IDX) FILE_CNT, MIN(ATTACH_IDX) ATTACH_IDX 
+                            			FROM TB_BBS_ATTACH_FILE 
+                            			WHERE DEL_YN='N' AND GUBUN = 'T'
+							   			AND BBS_MST_IDX = #bbs_mst_idx#
+                            		   GROUP BY BBS_MST_IDX, DATA_IDX) T ON T.DATA_IDX = A.DATA_IDX AND T.BBS_MST_IDX = A.BBS_MST_IDX  
+                     
+                            	                                           
+				WHERE A.BBS_MST_IDX = #bbs_mst_idx#
+				  AND A.DEL_YN    = 'N'				  
+				  AND A.NOTICE_YN = 'N'
+				  AND A.DEL_YN NOT LIKE 'M'
+				  AND A.BBS_LEVEL > 0 AND trim(A.BBS_REF) = #data_idx#
+			ORDER BY A.BBS_STEP ASC
+	</select>
+	
+	<update id="ncsBbs.updateHits" parameterClass="map">
+		UPDATE TB_BBS_DATA 
+		       SET HITS = HITS+1 
+		 WHERE BBS_MST_IDX = #bbs_mst_idx# 
+		       AND DATA_IDX = #data_idx#
+	</update>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<insert id="ncsBbs.registAttachFile" parameterClass="map">
+		<selectKey keyProperty="idx" type="pre" resultClass="String">
+			SELECT concat('BF' , LPAD( ifnull(MAX(SUBSTR(ATTACH_IDX , 3)) , 0) + 1 , 10 , '0' )) IDX FROM TB_BBS_ATTACH_FILE
+			WHERE BBS_MST_IDX = #bbs_mst_idx# 
+			  AND ATTACH_IDX LIKE 'BF%'      
+		</selectKey>
+		<![CDATA[ 
+			INSERT INTO TB_BBS_ATTACH_FILE(
+				 BBS_MST_IDX
+				,DATA_IDX
+				,ATTACH_IDX
+				,ORG_FILE_NM
+				,FILE_NM
+				,FILE_PATH
+				,DEL_YN
+				,GUBUN
+				,DOWNLOAD_CNT
+			)VALUES(
+				#bbs_mst_idx# , #data_idx# , #idx# , #org_file_nm# , #file_nm#
+				,#file_path#
+				,'N'
+				,#gubun#
+				,0 
+			)
+		]]>
+	</insert>
+
+	<select id="ncsBbs.bbsAttachFileList" parameterClass="map" resultClass="egovMap">
+		SELECT
+				 TRIM(BBS_MST_IDX) as BBS_MST_IDX
+				,TRIM(DATA_IDX)    as DATA_IDX
+				,TRIM(ATTACH_IDX)  as ATTACH_IDX
+				,ORG_FILE_NM
+				,FILE_NM
+				,FILE_PATH
+				,GUBUN
+				,DOWNLOAD_CNT
+				,DEL_YN
+				,DEL_DT
+		FROM TB_BBS_ATTACH_FILE
+		WHERE DEL_YN = 'N' AND TRIM(BBS_MST_IDX) = #bbs_mst_idx#
+		  AND trim(DATA_IDX) = #data_idx# 
+			
+			<isNotEmpty property="GUBUN">
+			<isEqual property="GUBUN" compareValue="C">
+				AND GUBUN = 'C'  /** C일반 */
+			</isEqual>
+			<isEqual property="GUBUN" compareValue="T">
+				AND GUBUN = 'T'	/** T 썸네일 */
+			</isEqual>
+			<isEqual property="GUBUN" compareValue="M">
+				AND GUBUN = 'M'	/** M동영상 */
+			</isEqual>
+		</isNotEmpty>
+			
+		
+	</select>
+	
+	
+	<select id="ncsBbs.bbsAttachFileDetail" parameterClass="map" resultClass="egovMap">
+		SELECT
+			     TRIM(BBS_MST_IDX) as BBS_MST_IDX
+				,TRIM(DATA_IDX)    as DATA_IDX
+				,TRIM(ATTACH_IDX)  as ATTACH_IDX
+				,ORG_FILE_NM
+				,FILE_NM
+				,FILE_PATH
+				,GUBUN
+				,DOWNLOAD_CNT
+				,DEL_YN
+				,DEL_DT
+		FROM TB_BBS_ATTACH_FILE
+		WHERE DEL_YN = 'N' AND TRIM(BBS_MST_IDX) = #bbs_mst_idx#
+		  AND trim(DATA_IDX) = #data_idx#
+		  AND trim(ATTACH_IDX) = #attach_idx#
+	</select>
+	 
+	 
+	 	
+	<select id="ncsBbs.bbsAttachFileDetailByKind" parameterClass="map" resultClass="egovMap">
+		SELECT
+			     TRIM(BBS_MST_IDX) as BBS_MST_IDX
+				,TRIM(DATA_IDX)    as DATA_IDX
+				,TRIM(ATTACH_IDX)  as ATTACH_IDX
+				,ORG_FILE_NM
+				,FILE_NM
+				,FILE_PATH
+				,GUBUN
+				,DOWNLOAD_CNT
+				,DEL_YN
+				,DEL_DT
+		FROM TB_BBS_ATTACH_FILE
+		WHERE DEL_YN = 'N' AND TRIM(BBS_MST_IDX) = #bbs_mst_idx#
+			AND trim(DATA_IDX) = #data_idx#
+			AND GUBUN = #gubun#
+	</select>
+	 
+	 
+	
+	<update id="ncsBbs.deleteAttachFile" parameterClass="map">
+		UPDATE TB_BBS_ATTACH_FILE SET 
+			  DEL_YN = 'Y'
+			, DEL_DT = now()
+		WHERE TRIM(BBS_MST_IDX)  = #bbs_mst_idx#
+		  AND trim(DATA_IDX)   = #data_idx#
+		  AND trim(ATTACH_IDX) = #attach_idx#
+	</update>
+	
+	<update id="ncsBbs.updateMoveAttachFile" parameterClass="map">
+		UPDATE TB_BBS_ATTACH_FILE 
+		       SET BBS_MST_IDX = #selBbs#, 
+		       DATA_IDX = #newDataIdx# 
+		 WHERE BBS_MST_IDX = #BBSMSTIDX# 
+		       AND DATA_IDX = #DATAIDX#
+	</update>
+	
+	
+	  
+</sqlMap>

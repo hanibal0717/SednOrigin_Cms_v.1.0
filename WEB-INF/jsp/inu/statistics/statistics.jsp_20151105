@@ -1,0 +1,161 @@
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
+<%@ taglib prefix="validator" uri="http://www.springmodules.org/tags/commons-validator"%>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
+<%@page import="java.util.List"%>
+<%@page import="java.util.Map"%>
+<%@page import="vcms.common.util.StringUtil" %>
+
+<%
+String StartDate = (String)request.getAttribute("StartDate");
+String EndDate = (String)request.getAttribute("EndDate");
+
+List<Map<String , Object>> statisticsWeeklyTop5 = (List)request.getAttribute("statisticsWeeklyTop5");
+
+List<Map<String , Object>> statisticsList = (List)request.getAttribute("statisticsList");
+%>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta name="decorator" content="defaultPage">
+
+<script>
+$(document).ready(function() { 
+
+});
+
+function search() { 
+	var f = document.frm;	
+	f.action = "/statistics/statistics.do";
+	f.submit();
+}
+</script>
+</head>
+<body>
+<h2>통계<span class="text"></span></h2>
+<p class="location"> 통계 > 통계</p>
+	<!-- 
+	<p class="tar Mbo10">
+		<span class="btn_type01 btn" id="save"><a href="#">조회</a></span>
+	</p>
+	 -->
+	 
+	<section>
+		<h3>Weekly Top5 (<%=StartDate%>~<%=EndDate%>)</h3>
+			<table class="data_tableW02 data_tableW02_bottom01">
+				<tbody>
+					<%
+					if(statisticsWeeklyTop5 != null){
+						Map<String , Object> bbsDataInfo;
+						int list_count = statisticsWeeklyTop5.size();
+						for(int i=0; i<statisticsWeeklyTop5.size(); i++){
+							Map<String , Object> info = statisticsWeeklyTop5.get(i);
+					%>
+					<tr>
+						<td>No<%=i+1%></td>
+						<td><%=info.get("title")%></td>
+						<td><%=info.get("sConType")%></td>
+						<td><%=info.get("sCount")%></td>
+					</tr>
+					<%
+						}
+					}
+					%>
+				</tbody>
+			</table>
+
+			<h3>Individual status</h3>
+			
+			<form name="frm" id="frm" method="post" >
+			<table class="data_tableW02 data_tableW02_bottom02">
+				<tbody>
+					<tr>
+						<td><input type="text" class="textInput_size13" style="width:300px" name="search_keyword" id="search_keyword" placeholder="콘텐츠제목 또는 내용을 입력해주세요"/><button class="btn_searchPare btn_searchPare_ml5" onclick="search();">검색</button></td>
+					</tr>
+				</tbody>
+			</table>
+			</form>
+			
+			<%
+			if (statisticsList != null && statisticsList.size() > 0) {	
+				for (Map<String , Object> statistics : statisticsList) {
+							
+			%>
+			<table class="data_tableW04 statistics_table" style="table-layout:fixed";>
+				<colgroup>
+					<col width="30%" />
+					<col width="*" />
+					<col width="*" />
+					<col width="*" />
+				</colgroup>
+				<thead>
+					<tr>
+						<th colspan="2"><%=statistics.get("title")%></th>
+						<th></th>
+						<th><!-- 2015/8/26 --></th>
+						<!-- 
+						<th>
+							<span class="btn_type02 btn"><a href="#">상세보기</a></span>
+						</th>
+						-->
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td class="image_size">
+							<%if ("VOD Play".equals(statistics.get("sConType")) || "VOD Page View".equals(statistics.get("sConType"))) {%>
+							<img src="/vod/file/getImage.do?data_idx=<%=statistics.get("sConIdx")%>" onerror="this.src='../images/tmp_01.gif';" />
+							<%} else {%>
+							<img src="../images/tmp_01.gif"/>
+							<%}%>
+						</td>
+						<td><img src="../images/contents_analysis05.png"/>
+							<%if ("VOD Play".equals(statistics.get("sConType")) || "VOD Page View".equals(statistics.get("sConType"))) {%>
+							<%=StringUtil.nvlObj(statistics.get("vodPcViewCount"), "0")%>
+							<%} else {%>
+							<%=StringUtil.nvlObj(statistics.get("imageTextPcViewCount"), "0")%>
+							<%}%>
+							view
+						</td>
+						<td><img src="../images/contents_analysis04.png"/>
+							<%if ("VOD Play".equals(statistics.get("sConType")) || "VOD Page View".equals(statistics.get("sConType"))) {%>
+							<%=StringUtil.nvlObj(statistics.get("vodMobileViewCount"), "0")%>
+							<%} else {%>
+							<%=StringUtil.nvlObj(statistics.get("imageTextMobileViewCount"), "0")%>
+							<%}%>
+							view
+						</td>
+						<td><img src="../images/contents_analysis02.png"/>
+							<%=StringUtil.nvlObj(statistics.get("vodPlayCount"), "0")%>view
+						</td>
+						<!-- 
+						<td></td>
+						 -->
+					</tr>
+					<!-- 
+					<tr>
+						<td><img src="../images/contents_analysis02.png"/>555 view</td>
+						<td></td>
+						<td></td>
+						<td class="center"><img src="../images/contents_analysis08.png"/></td>
+					</tr>
+					<tr>
+						<td><img src="../images/contents_analysis03.png"/>245 link</td>
+						<td><img src="../images/contents_analysis05.png"/>111view</td>
+						<td><img src="../images/contents_analysis07.png"/>3talks</td>
+						<td class="center"><span class="btn_type02 btn"><a href="#">그래프보기</a></span></td>
+					</tr>
+					 -->
+				</tbody>
+			</table><br>
+			<%
+				}
+			}
+			%>
+		<div class="clear"></div>	
+
+	</section>
+</body>
+</html>

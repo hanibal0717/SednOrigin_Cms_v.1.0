@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="statistics">
+
+	<typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+	
+	<select id="statistics.selectWeeklyTop5" parameterClass="map" resultClass="egovMap">
+		SELECT
+			S_CON_TYPE,
+			S_CON_IDX,
+			SUM(S_COUNT) AS S_COUNT,
+			CASE S_CON_TYPE WHEN 'VOD Play' THEN (SELECT VOD_TITLE FROM TB_VOD_DATA WHERE VOD_IDX = S_CON_IDX) 
+			WHEN 'VOD Page View' THEN (SELECT VOD_TITLE FROM TB_VOD_DATA WHERE VOD_IDX = S_CON_IDX)
+			ELSE (SELECT TITLE FROM TB_CONTENTS_TEXT_DATA WHERE TEXT_IDX = S_CON_IDX) END AS TITLE
+		FROM TB_STATISTICS WHERE 1 = 1
+			<![CDATA[
+			AND S_DATE >= #StartDate# AND S_DATE <= #EndDate#
+			]]>
+		GROUP BY S_CON_TYPE, S_CON_IDX
+		ORDER BY S_COUNT DESC, S_CON_IDX DESC
+		LIMIT 5 
+	</select>
+	
+	<select id="statistics.selectWeeklyViewStatus" parameterClass="map" resultClass="egovMap">
+		SELECT DATE_FORMAT(S_DATE, '%Y-%m-%d' ) AS DATE_INFO, COUNT(*) AS CNT
+		FROM TB_STATISTICS 
+			WHERE S_DATE >= DATE_ADD(CURDATE(), INTERVAL -7 DAY) AND S_CON_TYPE = 'VOD Play'
+		GROUP BY DATE_FORMAT(S_DATE, '%Y-%m-%d' )
+		ORDER BY DATE_FORMAT(S_DATE, '%Y-%m-%d' ) ASC
+	</select>
+	
+	<select id="statistics.search" parameterClass="map" resultClass="egovMap">
+		SELECT * FROM (
+	        SELECT
+				S_CON_TYPE
+				,S_CON_IDX
+				,SUM(S_COUNT) AS S_COUNT
+				,CASE S_CON_TYPE WHEN 'VOD Play' THEN (SELECT VOD_TITLE FROM TB_VOD_DATA WHERE VOD_IDX = S_CON_IDX) 
+				WHEN 'VOD Page View' THEN (SELECT VOD_TITLE FROM TB_VOD_DATA WHERE VOD_IDX = S_CON_IDX)
+				ELSE (SELECT TITLE FROM TB_CONTENTS_TEXT_DATA WHERE TEXT_IDX = S_CON_IDX) END AS TITLE
+				,(SELECT SUM(S_COUNT) FROM TB_STATISTICS TS WHERE TS.S_CON_IDX = S.S_CON_IDX and TS.S_CON_TYPE = 'VOD play') AS VOD_PLAY_COUNT
+				,(SELECT SUM(S_COUNT) FROM TB_STATISTICS TS WHERE TS.S_CON_IDX = S.S_CON_IDX and TS.S_CON_TYPE = 'VOD Page View' AND S_TYPE = 'PC') AS VOD_PC_VIEW_COUNT
+				,(SELECT SUM(S_COUNT) FROM TB_STATISTICS TS WHERE TS.S_CON_IDX = S.S_CON_IDX and TS.S_CON_TYPE = 'VOD Page View' AND S_TYPE = 'MOBILE') AS VOD_MOBILE_VIEW_COUNT
+				,(SELECT SUM(S_COUNT) FROM TB_STATISTICS TS WHERE TS.S_CON_IDX = S.S_CON_IDX and TS.S_CON_TYPE = 'IMAGE TEXT Page View' AND S_TYPE = 'PC') AS IMAGE_TEXT_PC_VIEW_COUNT
+				,(SELECT SUM(S_COUNT) FROM TB_STATISTICS TS WHERE TS.S_CON_IDX = S.S_CON_IDX and TS.S_CON_TYPE = 'IMAGE TEXT Page View' AND S_TYPE = 'MOBILE') AS IMAGE_TEXT_MOBILE_VIEW_COUNT
+			FROM TB_STATISTICS S WHERE 1 = 1
+	        GROUP BY S_CON_IDX
+			ORDER BY S_COUNT DESC, S_CON_IDX DESC
+        ) A
+        <isNotEmpty property="search_keyword">
+        WHERE TITLE LIKE CONCAT('%', #search_keyword#, '%')
+        </isNotEmpty>
+	</select>
+	
+	<select id="statistics.selectWeeklyViewContentsBest" parameterClass="map" resultClass="egovMap">
+		SELECT
+			1 AS ORDERS , '미디어' AS V_TYPE, B.VOD_TITLE AS TITLE, S_CON_IDX, TOT_COUNT, PC_COUNT, MOBILE_COUNT, MEM_COUNT, NON_MEM_COUNT
+		FROM
+		(
+		  SELECT 
+		      S_CON_IDX
+		      , COUNT(*) AS TOT_COUNT  
+		      , SUM( CASE WHEN S_TYPE = 'PC' THEN 1 ELSE 0 END ) AS PC_COUNT
+		      , SUM( CASE WHEN S_TYPE = 'MOBILE' THEN 1 ELSE 0 END ) AS MOBILE_COUNT
+		      , SUM( CASE WHEN USER_ID IS NOT NULL THEN 1 ELSE 0 END ) AS MEM_COUNT
+		      , SUM( CASE WHEN USER_ID IS NULL THEN 1 ELSE 0 END ) AS NON_MEM_COUNT
+		  FROM TB_STATISTICS
+		  WHERE S_CON_TYPE = 'VOD Play'
+		        AND S_DATE >= DATE_ADD(CURDATE(), INTERVAL -7 DAY)
+		  GROUP BY S_CON_IDX 
+		  ORDER BY COUNT(*) DESC
+		  LIMIT 1
+		) A , TB_VOD_DATA B
+		WHERE A.S_CON_IDX = B.VOD_IDX
+		UNION ALL
+		SELECT
+			2 AS ORDERS , 'Image + Text' AS V_TYPE, B.TITLE AS TITLE, S_CON_IDX, TOT_COUNT, PC_COUNT, MOBILE_COUNT, MEM_COUNT, NON_MEM_COUNT
+		FROM
+		(
+		  SELECT 
+		      S_CON_IDX
+		      , COUNT(*) AS TOT_COUNT 
+		      , SUM( CASE WHEN S_TYPE = 'PC' THEN 1 ELSE 0 END ) AS PC_COUNT
+		      , SUM( CASE WHEN S_TYPE = 'MOBILE' THEN 1 ELSE 0 END ) AS MOBILE_COUNT
+		      , SUM( CASE WHEN USER_ID IS NOT NULL THEN 1 ELSE 0 END ) AS MEM_COUNT
+		      , SUM( CASE WHEN USER_ID IS NULL THEN 1 ELSE 0 END ) AS NON_MEM_COUNT
+		  FROM TB_STATISTICS
+		  WHERE S_CON_TYPE = 'IMAGE TEXT Page View'
+		        AND S_DATE >= DATE_ADD(CURDATE(), INTERVAL -7 DAY)
+		  GROUP BY S_CON_IDX 
+		  ORDER BY COUNT(*) DESC
+		  LIMIT 1
+		) A , TB_CONTENTS_TEXT_DATA B
+		WHERE A.S_CON_IDX = B.TEXT_IDX
+		ORDER BY ORDERS ASC
+	</select>
+	
+	<select id="statistics.selectWeeklyViewDeviceStatus" parameterClass="map" resultClass="egovMap">
+		SELECT 
+		    SUM( CASE WHEN S_TYPE = 'PC' THEN 1 ELSE 0 END ) AS PC_COUNT
+		  , SUM( CASE WHEN S_TYPE = 'MOBILE' THEN 1 ELSE 0 END ) AS MOBILE_COUNT
+		FROM 
+		  TB_STATISTICS A, TB_VOD_DATA B
+		 WHERE A.S_CON_IDX = B.VOD_IDX
+           AND A.S_DATE >= DATE_ADD(CURDATE(), INTERVAL -7 DAY)
+	</select>
+	
+	<select id="statistics.selectContentsStatList" parameterClass="map" resultClass="egovMap">
+		SELECT
+			A.*
+		    , CASE WHEN A.DIV_TYPE = 'VOD' THEN '미디어' ELSE 'Image + Text' END AS V_TYPE 
+		    , CASE WHEN B.VOD_IDX IS NOT NULL THEN B.VOD_TITLE 
+		           ELSE C.TITLE
+		     END AS TITLE
+		    , CASE WHEN B.VOD_IDX IS NOT NULL THEN B.REG_DT 
+		          ELSE C.REG_DT
+		     END AS REG_DT
+		FROM
+		(
+		    SELECT
+		        SUBSTRING(S_CON_TYPE,1,3) AS DIV_TYPE
+		        , S_CON_IDX
+		        , SUM( CASE WHEN S_CON_TYPE = 'VOD Play' AND S_TYPE = 'PC' THEN 1 ELSE 0 END ) AS PC_01    
+		        , SUM( CASE WHEN S_CON_TYPE = 'VOD Play' AND S_TYPE = 'MOBILE' THEN 1 ELSE 0 END ) AS MOBIL_01
+		        , SUM( CASE WHEN S_CON_TYPE = 'VOD Play' THEN 1 ELSE 0 END ) AS SUM_01
+		        
+		        , SUM( CASE WHEN S_CON_TYPE IN ('VOD Page View','IMAGE TEXT Page View') AND S_TYPE = 'PC' THEN 1 ELSE 0 END ) AS PC_02
+		        , SUM( CASE WHEN S_CON_TYPE IN ('VOD Page View','IMAGE TEXT Page View') AND S_TYPE = 'MOBILE' THEN 1 ELSE 0 END ) AS MOBIL_02
+		        , SUM( CASE WHEN S_CON_TYPE IN ('VOD Page View','IMAGE TEXT Page View') THEN 1 ELSE 0 END ) AS SUM_02
+		              
+		        , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%Y-%m-%d' ) =  DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL -2 DAY), '%Y-%m-%d' ) THEN 1 ELSE 0 END ) AS DAY_03
+		        , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%Y-%m-%d' ) =  DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL -1 DAY), '%Y-%m-%d' ) THEN 1 ELSE 0 END ) AS DAY_02
+		        , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%Y-%m-%d' ) =  DATE_FORMAT(CURDATE(), '%Y-%m-%d' ) THEN 1 ELSE 0 END ) AS DAY_01
+		        
+			    FROM
+			        TB_STATISTICS 
+			    GROUP BY SUBSTRING(S_CON_TYPE,1,3) , S_CON_IDX
+			) A LEFT OUTER JOIN TB_VOD_DATA B 
+			ON A.S_CON_IDX = B.VOD_IDX AND A.DIV_TYPE = 'VOD'
+				LEFT OUTER JOIN TB_CONTENTS_TEXT_DATA C
+			ON A.S_CON_IDX = C.TEXT_IDX AND A.DIV_TYPE = 'IMA'
+			
+			<isEmpty property="listSort">
+				ORDER BY CASE WHEN B.VOD_IDX IS NOT NULL THEN B.REG_DT 
+				           WHEN B.VOD_IDX IS NULL THEN C.REG_DT
+				     END DESC
+			</isEmpty>
+			     
+		     <isNotEmpty property="listSort">
+				<isEqual property="listSort" compareValue="1">
+					ORDER BY SUM_01 ASC
+				</isEqual>
+				<isEqual property="listSort" compareValue="2">
+					ORDER BY SUM_01 DESC
+				</isEqual>
+				<isEqual property="listSort" compareValue="3">
+					ORDER BY SUM_02 ASC
+				</isEqual>
+				<isEqual property="listSort" compareValue="4">
+					ORDER BY SUM_02 DESC 
+				</isEqual>
+			</isNotEmpty>
+			
+			<isNotEmpty property="firstIndex">
+				 limit #firstIndex#, #pageUnit# 
+			</isNotEmpty>
+				
+	</select>
+	
+	<select id="statistics.selectContentsStatCnt" parameterClass="java.util.HashMap" resultClass="int">
+	SELECT
+		COUNT(*) AS TOT_COUNT
+	FROM
+		(
+	      SELECT
+	          SUBSTRING(S_CON_TYPE,1,3)
+	      FROM
+	          TB_STATISTICS
+	      GROUP BY SUBSTRING(S_CON_TYPE,1,3) , S_CON_IDX
+	    ) A
+	</select>
+	
+	<select id="statistics.selectUserStatList" parameterClass="map" resultClass="egovMap">
+		SELECT
+			A.*
+		    , B.USER_NM
+		FROM
+		(
+		    SELECT
+		        USER_ID
+		        , SUM( CASE WHEN S_CON_TYPE = 'VOD Play' AND S_TYPE = 'PC' THEN 1 ELSE 0 END ) AS PC_01    
+		        , SUM( CASE WHEN S_CON_TYPE = 'VOD Play' AND S_TYPE = 'MOBILE' THEN 1 ELSE 0 END ) AS MOBIL_01
+		        , SUM( CASE WHEN S_CON_TYPE = 'VOD Play' THEN 1 ELSE 0 END ) AS SUM_01
+		        
+		        , SUM( CASE WHEN S_CON_TYPE IN ('VOD Page View','IMAGE TEXT Page View') AND S_TYPE = 'PC' THEN 1 ELSE 0 END ) AS PC_02
+		        , SUM( CASE WHEN S_CON_TYPE IN ('VOD Page View','IMAGE TEXT Page View') AND S_TYPE = 'MOBILE' THEN 1 ELSE 0 END ) AS MOBIL_02
+		        , SUM( CASE WHEN S_CON_TYPE IN ('VOD Page View','IMAGE TEXT Page View') THEN 1 ELSE 0 END ) AS SUM_02
+		              
+		        , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%Y-%m-%d' ) =  DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL -2 DAY), '%Y-%m-%d' ) THEN 1 ELSE 0 END ) AS DAY_03
+		        , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%Y-%m-%d' ) =  DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL -1 DAY), '%Y-%m-%d' ) THEN 1 ELSE 0 END ) AS DAY_02
+		        , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%Y-%m-%d' ) =  DATE_FORMAT(CURDATE(), '%Y-%m-%d' ) THEN 1 ELSE 0 END ) AS DAY_01
+		        
+		    FROM
+		        TB_STATISTICS 
+		    WHERE USER_ID IS NOT NULL
+		    GROUP BY USER_ID    
+		) A LEFT OUTER JOIN TB_USER B 
+		ON A.USER_ID = B.USER_ID
+
+	     <isNotEmpty property="listSort">
+			<isEqual property="listSort" compareValue="1">
+				ORDER BY SUM_01 ASC
+			</isEqual>
+			<isEqual property="listSort" compareValue="2">
+				ORDER BY SUM_01 DESC
+			</isEqual>
+			<isEqual property="listSort" compareValue="3">
+				ORDER BY SUM_02 ASC
+			</isEqual>
+			<isEqual property="listSort" compareValue="4">
+				ORDER BY SUM_02 DESC 
+			</isEqual>
+		</isNotEmpty>
+			
+		<isNotEmpty property="firstIndex">
+			 limit #firstIndex#, #pageUnit# 
+		</isNotEmpty>
+				
+	</select>
+	
+	<select id="statistics.selectUserStatCnt" parameterClass="java.util.HashMap" resultClass="int">
+		SELECT
+			COUNT(*) AS TOT_COUNT
+		FROM
+			(
+		      SELECT
+		          USER_ID          
+		      FROM
+		          TB_STATISTICS
+		      WHERE USER_ID IS NOT NULL
+		      GROUP BY USER_ID
+		    ) A
+	</select>
+	
+	<select id="statistics.selectDayStatList" parameterClass="map" resultClass="egovMap">
+	<![CDATA[
+		SELECT 
+			CAST(DATE_FORMAT(S_DATE, '%d' ) AS UNSIGNED ) V_DAY 
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '00' THEN 1 ELSE 0 END ) SUM_01
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '01' THEN 1 ELSE 0 END ) SUM_02
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '02' THEN 1 ELSE 0 END ) SUM_03
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '03' THEN 1 ELSE 0 END ) SUM_04
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '04' THEN 1 ELSE 0 END ) SUM_05
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '05' THEN 1 ELSE 0 END ) SUM_06
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '06' THEN 1 ELSE 0 END ) SUM_07
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '07' THEN 1 ELSE 0 END ) SUM_08
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '08' THEN 1 ELSE 0 END ) SUM_09
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '09' THEN 1 ELSE 0 END ) SUM_10
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '10' THEN 1 ELSE 0 END ) SUM_11
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '11' THEN 1 ELSE 0 END ) SUM_12
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '12' THEN 1 ELSE 0 END ) SUM_13
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '13' THEN 1 ELSE 0 END ) SUM_14
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '14' THEN 1 ELSE 0 END ) SUM_15
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '15' THEN 1 ELSE 0 END ) SUM_16
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '16' THEN 1 ELSE 0 END ) SUM_17
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '17' THEN 1 ELSE 0 END ) SUM_18
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '18' THEN 1 ELSE 0 END ) SUM_19
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '19' THEN 1 ELSE 0 END ) SUM_20
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '20' THEN 1 ELSE 0 END ) SUM_21
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '21' THEN 1 ELSE 0 END ) SUM_22
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '22' THEN 1 ELSE 0 END ) SUM_23
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '23' THEN 1 ELSE 0 END ) SUM_24
+		    , COUNT(*) SUB_SUM
+		FROM 
+			TB_STATISTICS
+		WHERE
+			S_DATE >= #startDate#
+		    AND S_DATE < #currentDate#
+		GROUP BY 
+			DATE_FORMAT(S_DATE, '%d' )
+		UNION ALL
+		SELECT 
+			99 V_DAY
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '00' THEN 1 ELSE 0 END ) SUM_01
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '01' THEN 1 ELSE 0 END ) SUM_02
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '02' THEN 1 ELSE 0 END ) SUM_03
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '03' THEN 1 ELSE 0 END ) SUM_04
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '04' THEN 1 ELSE 0 END ) SUM_05
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '05' THEN 1 ELSE 0 END ) SUM_06
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '06' THEN 1 ELSE 0 END ) SUM_07
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '07' THEN 1 ELSE 0 END ) SUM_08
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '08' THEN 1 ELSE 0 END ) SUM_09
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '09' THEN 1 ELSE 0 END ) SUM_10
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '10' THEN 1 ELSE 0 END ) SUM_11
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '11' THEN 1 ELSE 0 END ) SUM_12
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '12' THEN 1 ELSE 0 END ) SUM_13
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '13' THEN 1 ELSE 0 END ) SUM_14
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '14' THEN 1 ELSE 0 END ) SUM_15
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '15' THEN 1 ELSE 0 END ) SUM_16
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '16' THEN 1 ELSE 0 END ) SUM_17
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '17' THEN 1 ELSE 0 END ) SUM_18
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '18' THEN 1 ELSE 0 END ) SUM_19
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '19' THEN 1 ELSE 0 END ) SUM_20
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '20' THEN 1 ELSE 0 END ) SUM_21
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '21' THEN 1 ELSE 0 END ) SUM_22
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '22' THEN 1 ELSE 0 END ) SUM_23
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%H' ) = '23' THEN 1 ELSE 0 END ) SUM_24
+		    , COUNT(*) SUB_SUM
+		FROM 
+			TB_STATISTICS
+		WHERE
+			S_DATE >= #startDate#
+		    AND S_DATE < #currentDate#
+		GROUP BY 
+			DATE_FORMAT(S_DATE, '%m' )
+		ORDER BY V_DAY ASC
+	]]>
+	</select>
+	
+	<select id="statistics.selectMonthStatList" parameterClass="map" resultClass="egovMap">
+	<![CDATA[
+			SELECT 
+			CAST(DATE_FORMAT(S_DATE, '%m' ) AS UNSIGNED ) V_DAY 
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '01' THEN 1 ELSE 0 END ) SUM_01
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '02' THEN 1 ELSE 0 END ) SUM_02
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '03' THEN 1 ELSE 0 END ) SUM_03
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '04' THEN 1 ELSE 0 END ) SUM_04
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '05' THEN 1 ELSE 0 END ) SUM_05
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '06' THEN 1 ELSE 0 END ) SUM_06
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '07' THEN 1 ELSE 0 END ) SUM_07
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '08' THEN 1 ELSE 0 END ) SUM_08
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '09' THEN 1 ELSE 0 END ) SUM_09
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '10' THEN 1 ELSE 0 END ) SUM_10
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '11' THEN 1 ELSE 0 END ) SUM_11
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '12' THEN 1 ELSE 0 END ) SUM_12
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '13' THEN 1 ELSE 0 END ) SUM_13
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '14' THEN 1 ELSE 0 END ) SUM_14
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '15' THEN 1 ELSE 0 END ) SUM_15
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '16' THEN 1 ELSE 0 END ) SUM_16
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '17' THEN 1 ELSE 0 END ) SUM_17
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '18' THEN 1 ELSE 0 END ) SUM_18
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '19' THEN 1 ELSE 0 END ) SUM_19
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '20' THEN 1 ELSE 0 END ) SUM_20
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '21' THEN 1 ELSE 0 END ) SUM_21
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '22' THEN 1 ELSE 0 END ) SUM_22
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '23' THEN 1 ELSE 0 END ) SUM_23
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '24' THEN 1 ELSE 0 END ) SUM_24
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '25' THEN 1 ELSE 0 END ) SUM_25
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '26' THEN 1 ELSE 0 END ) SUM_26
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '27' THEN 1 ELSE 0 END ) SUM_27
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '28' THEN 1 ELSE 0 END ) SUM_28
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '29' THEN 1 ELSE 0 END ) SUM_29
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '30' THEN 1 ELSE 0 END ) SUM_30 
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '31' THEN 1 ELSE 0 END ) SUM_31
+		    , COUNT(*) SUB_SUM
+		FROM 
+			TB_STATISTICS
+		WHERE
+			S_DATE >= #currentDate#
+		    AND S_DATE < #endDate#
+		GROUP BY 
+			DATE_FORMAT(S_DATE, '%m' )
+		UNION ALL
+		SELECT 
+			99 V_DAY
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '01' THEN 1 ELSE 0 END ) SUM_01
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '02' THEN 1 ELSE 0 END ) SUM_02
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '03' THEN 1 ELSE 0 END ) SUM_03
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '04' THEN 1 ELSE 0 END ) SUM_04
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '05' THEN 1 ELSE 0 END ) SUM_05
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '06' THEN 1 ELSE 0 END ) SUM_06
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '07' THEN 1 ELSE 0 END ) SUM_07
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '08' THEN 1 ELSE 0 END ) SUM_08
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '09' THEN 1 ELSE 0 END ) SUM_09
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '10' THEN 1 ELSE 0 END ) SUM_10
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '11' THEN 1 ELSE 0 END ) SUM_11
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '12' THEN 1 ELSE 0 END ) SUM_12
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '13' THEN 1 ELSE 0 END ) SUM_13
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '14' THEN 1 ELSE 0 END ) SUM_14
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '15' THEN 1 ELSE 0 END ) SUM_15
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '16' THEN 1 ELSE 0 END ) SUM_16
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '17' THEN 1 ELSE 0 END ) SUM_17
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '18' THEN 1 ELSE 0 END ) SUM_18
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '19' THEN 1 ELSE 0 END ) SUM_19
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '20' THEN 1 ELSE 0 END ) SUM_20
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '21' THEN 1 ELSE 0 END ) SUM_21
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '22' THEN 1 ELSE 0 END ) SUM_22
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '23' THEN 1 ELSE 0 END ) SUM_23
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '24' THEN 1 ELSE 0 END ) SUM_24
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '25' THEN 1 ELSE 0 END ) SUM_25
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '26' THEN 1 ELSE 0 END ) SUM_26
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '27' THEN 1 ELSE 0 END ) SUM_27
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '28' THEN 1 ELSE 0 END ) SUM_28
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '29' THEN 1 ELSE 0 END ) SUM_29
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '30' THEN 1 ELSE 0 END ) SUM_30 
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%d' ) = '31' THEN 1 ELSE 0 END ) SUM_31
+		    , COUNT(*) SUB_SUM
+		FROM 
+			TB_STATISTICS
+		WHERE
+			S_DATE >= #currentDate#
+		    AND S_DATE < #endDate#
+		GROUP BY 
+			DATE_FORMAT(S_DATE, '%Y' )
+		ORDER BY V_DAY ASC
+		]]>
+	</select>
+	
+	<select id="statistics.selectYearStatList" parameterClass="map" resultClass="egovMap">
+	<![CDATA[
+		SELECT 
+			CAST(DATE_FORMAT(S_DATE, '%Y' ) AS UNSIGNED ) V_DAY 
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '01' THEN 1 ELSE 0 END ) SUM_01
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '02' THEN 1 ELSE 0 END ) SUM_02
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '03' THEN 1 ELSE 0 END ) SUM_03
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '04' THEN 1 ELSE 0 END ) SUM_04
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '05' THEN 1 ELSE 0 END ) SUM_05
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '06' THEN 1 ELSE 0 END ) SUM_06
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '07' THEN 1 ELSE 0 END ) SUM_07
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '08' THEN 1 ELSE 0 END ) SUM_08
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '09' THEN 1 ELSE 0 END ) SUM_09
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '10' THEN 1 ELSE 0 END ) SUM_10
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '11' THEN 1 ELSE 0 END ) SUM_11
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '12' THEN 1 ELSE 0 END ) SUM_12
+		    , COUNT(*) SUB_SUM
+		FROM 
+			TB_STATISTICS
+		GROUP BY 
+			DATE_FORMAT(S_DATE, '%y' )
+		UNION ALL
+		SELECT 
+			9999 V_DAY
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '01' THEN 1 ELSE 0 END ) SUM_01
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '02' THEN 1 ELSE 0 END ) SUM_02
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '03' THEN 1 ELSE 0 END ) SUM_03
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '04' THEN 1 ELSE 0 END ) SUM_04
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '05' THEN 1 ELSE 0 END ) SUM_05
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '06' THEN 1 ELSE 0 END ) SUM_06
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '07' THEN 1 ELSE 0 END ) SUM_07
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '08' THEN 1 ELSE 0 END ) SUM_08
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '09' THEN 1 ELSE 0 END ) SUM_09
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '10' THEN 1 ELSE 0 END ) SUM_10
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '11' THEN 1 ELSE 0 END ) SUM_11
+		    , SUM( CASE WHEN DATE_FORMAT(S_DATE, '%m' ) = '12' THEN 1 ELSE 0 END ) SUM_12
+		    , COUNT(*) SUB_SUM
+		FROM 
+			TB_STATISTICS
+		ORDER BY V_DAY ASC
+		]]>
+	</select>
+	
+	<select id="statistics.selectDateInfo" parameterClass="java.util.HashMap" resultClass="egovMap">
+		SELECT DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL -2 DAY), '%Y-%m-%d' ) AS DAY2,
+	           DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL -1 DAY), '%Y-%m-%d' ) AS DAY1,
+	           DATE_FORMAT(CURDATE(), '%Y-%m-%d' ) AS DAY0
+         FROM DUAL
+	</select>
+	
+	
+</sqlMap>
